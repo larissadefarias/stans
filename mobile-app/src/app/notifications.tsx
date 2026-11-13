@@ -6,7 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { timeAgo } from '../components/PostCard';
 import { ErrorText } from '../components/ui';
 import { useRealtime } from '../realtime';
-import { colors } from '../theme';
+import { colors, font } from '../theme';
 
 // Avaliações são anônimas: a notificação não mostra quem avaliou
 const describe = (n: Notification) => {
@@ -87,7 +87,7 @@ const s = StyleSheet.create({
   unread: { backgroundColor: colors.white },
   anon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.babyBlue, alignItems: 'center', justifyContent: 'center' },
   text: { color: colors.ink, lineHeight: 20 },
-  who: { fontWeight: '800' },
+  who: { fontWeight: '800', fontFamily: font.title },
   time: { color: colors.muted, fontSize: 12, marginTop: 2 },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.violet },
   empty: { textAlign: 'center', color: colors.muted, marginTop: 40, paddingHorizontal: 24, lineHeight: 20 },

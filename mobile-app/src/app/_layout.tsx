@@ -1,12 +1,18 @@
+import { Inter_400Regular } from '@expo-google-fonts/inter';
+import { Nunito_800ExtraBold, useFonts } from '@expo-google-fonts/nunito';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../auth';
 import { RealtimeProvider } from '../realtime';
-import { colors } from '../theme';
+import { colors, font } from '../theme';
 
 const back = { headerBackTitle: 'Voltar' };
 
 export default function RootLayout() {
+  // Carrega as fontes do tema; se demorar/falhar, o app segue com a fonte do sistema
+  const [loaded, failed] = useFonts({ Nunito_800ExtraBold, Inter_400Regular });
+  if (!loaded && !failed) return null;
+
   return (
     <AuthProvider>
       <RealtimeProvider>
@@ -14,7 +20,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerTintColor: colors.violet,
-            headerTitleStyle: { fontWeight: '800', color: colors.ink },
+            headerTitleStyle: { fontWeight: '800', fontFamily: font.title, color: colors.ink },
             contentStyle: { backgroundColor: colors.skyBg },
           }}
         >

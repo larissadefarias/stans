@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors, font } from '../theme';
 
 /** Bolinha rosa com o número de itens não lidos (some quando é 0). */
 export function Badge({ count }: { count: number }) {
@@ -27,5 +27,5 @@ const s = StyleSheet.create({
     position: 'absolute', top: -6, right: -10, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
     backgroundColor: colors.pink, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white,
   },
-  text: { color: colors.white, fontSize: 10, fontWeight: '800' },
+  text: { color: colors.white, fontSize: 10, fontWeight: '800', fontFamily: font.title },
 });

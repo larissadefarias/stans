@@ -5,7 +5,7 @@ import { api, errorMessage, type Message } from '../../api';
 import { useAuth } from '../../auth';
 import { ErrorText } from '../../components/ui';
 import { useRealtime } from '../../realtime';
-import { colors, radius } from '../../theme';
+import { colors, radius, font } from '../../theme';
 
 const hour = (iso: string) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
@@ -158,14 +158,14 @@ export default function Chat() {
 }
 
 const s = StyleSheet.create({
-  headerTitle: { fontWeight: '800', color: colors.ink, fontSize: 17 },
+  headerTitle: { fontWeight: '800', fontFamily: font.title, color: colors.ink, fontSize: 17 },
   typing: { color: colors.violet, fontSize: 12 },
   empty: { textAlign: 'center', color: colors.muted, marginVertical: 24, transform: [{ scaleY: -1 }] },
   day: { alignSelf: 'center', color: colors.muted, fontSize: 12, marginVertical: 10, textTransform: 'capitalize' },
   bubble: { maxWidth: '80%', borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, marginVertical: 2 },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.violet, borderBottomRightRadius: 6 },
   theirs: { alignSelf: 'flex-start', backgroundColor: colors.white, borderBottomLeftRadius: 6, borderWidth: 1, borderColor: colors.babyBlue },
-  sender: { color: colors.violet, fontWeight: '800', fontSize: 12, marginBottom: 2 },
+  sender: { color: colors.violet, fontWeight: '800', fontFamily: font.title, fontSize: 12, marginBottom: 2 },
   text: { color: colors.ink, fontSize: 15, lineHeight: 20 },
   time: { color: colors.muted, fontSize: 10, alignSelf: 'flex-end', marginTop: 2 },
   composer: { flexDirection: 'row', gap: 8, padding: 10, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.babyBlue, alignItems: 'flex-end' },
@@ -174,6 +174,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9, fontSize: 15, color: colors.ink,
   },
   send: { width: 42, height: 42, borderRadius: radius.pill, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center' },
-  sendText: { color: colors.white, fontSize: 18, fontWeight: '800' },
+  sendText: { color: colors.white, fontSize: 18, fontWeight: '800', fontFamily: font.title },
   offline: { textAlign: 'center', color: colors.muted, fontSize: 12, paddingBottom: 6, backgroundColor: colors.white },
 });

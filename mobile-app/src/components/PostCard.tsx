@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { api, mediaUrl, type Post } from '../api';
-import { colors, radius } from '../theme';
+import { colors, radius, font } from '../theme';
 import { Avatar } from './Avatar';
 import { OptionsSheet, ReportSheet, type Option } from './Sheet';
 import { Card } from './ui';
@@ -112,13 +112,13 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  author: { fontWeight: '800', color: colors.ink },
+  author: { fontWeight: '800', fontFamily: font.title, color: colors.ink },
   meta: { fontSize: 12, color: colors.muted },
-  more: { color: colors.muted, fontWeight: '800', fontSize: 20, paddingHorizontal: 4 },
+  more: { color: colors.muted, fontWeight: '800', fontFamily: font.title, fontSize: 20, paddingHorizontal: 4 },
   content: { fontSize: 15, color: colors.ink, lineHeight: 21 },
   image: { width: '100%', aspectRatio: 4 / 3, borderRadius: 12, marginTop: 10, backgroundColor: colors.skyBg },
   spoiler: { backgroundColor: colors.ink, borderRadius: 12, paddingVertical: 22, alignItems: 'center' },
-  spoilerTitle: { color: colors.white, fontWeight: '800' },
+  spoilerTitle: { color: colors.white, fontWeight: '800', fontFamily: font.title },
   spoilerHint: { color: colors.lilac, fontSize: 12, marginTop: 2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   tag: { color: colors.violet, fontSize: 13, fontWeight: '600' },

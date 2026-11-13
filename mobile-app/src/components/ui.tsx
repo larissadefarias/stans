@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import { colors, gradient, radius } from '../theme';
+import { colors, gradient, radius, font } from '../theme';
 
 export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   return <View style={[s.card, style]}>{children}</View>;
@@ -65,7 +65,7 @@ const s = StyleSheet.create({
   headerImage: { borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
   btn: { backgroundColor: colors.violet, borderRadius: radius.pill, paddingVertical: 13, alignItems: 'center' },
   btnGhost: { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.violet },
-  btnText: { color: colors.white, fontWeight: '800', fontSize: 15 },
+  btnText: { color: colors.white, fontWeight: '800', fontFamily: font.title, fontSize: 15 },
   label: { fontSize: 13, fontWeight: '700', color: colors.ink, marginBottom: 4 },
   input: {
     backgroundColor: colors.skyBg, borderRadius: 12, borderWidth: 1, borderColor: colors.babyBlue,

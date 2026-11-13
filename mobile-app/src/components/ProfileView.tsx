@@ -9,7 +9,7 @@ import { RatingButtons } from './RatingButtons';
 import { OptionsSheet, ReportSheet, type Option } from './Sheet';
 import { Button, Card, ErrorText, Field, GradientHeader } from './ui';
 import type { RatingType } from '../ratings';
-import { colors, radius } from '../theme';
+import { colors, radius, font } from '../theme';
 
 const DURATIONS: { label: string; hours: number | null }[] = [
   { label: 'Não expira', hours: null },
@@ -83,7 +83,7 @@ export function ProfileView({ username }: { username: string }) {
         </Pressable>
       ) : (
         <Pressable onPress={() => setMenu(profileMenu())} hitSlop={10} style={{ marginRight: 16 }} accessibilityLabel="Mais opções">
-          <Text style={{ color: colors.violet, fontWeight: '800', fontSize: 22 }}>⋯</Text>
+          <Text style={{ color: colors.violet, fontWeight: '800', fontFamily: font.title, fontSize: 22 }}>⋯</Text>
         </Pressable>
       ),
     });
@@ -300,7 +300,7 @@ export function ProfileView({ username }: { username: string }) {
                   <Text style={s.muted}>{when(item.createdAt)}</Text>
                   {options.length > 0 && (
                     <Pressable onPress={() => setMenu(options)} hitSlop={10} accessibilityLabel="Opções do recado" style={{ marginLeft: 8 }}>
-                      <Text style={{ color: colors.muted, fontWeight: '800', fontSize: 18 }}>⋯</Text>
+                      <Text style={{ color: colors.muted, fontWeight: '800', fontFamily: font.title, fontSize: 18 }}>⋯</Text>
                     </Pressable>
                   )}
                 </View>
@@ -318,16 +318,16 @@ export function ProfileView({ username }: { username: string }) {
 
 const s = StyleSheet.create({
   avatar: { alignSelf: 'center', borderWidth: 3, borderColor: colors.white },
-  name: { textAlign: 'center', fontSize: 22, fontWeight: '800', color: colors.white, marginTop: 10 },
+  name: { textAlign: 'center', fontSize: 22, fontWeight: '800', fontFamily: font.title, color: colors.white, marginTop: 10 },
   handle: { textAlign: 'center', color: colors.white, opacity: 0.9 },
   counts: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 8 },
   countText: { color: colors.white, opacity: 0.95 },
-  countNum: { fontWeight: '800' },
+  countNum: { fontWeight: '800', fontFamily: font.title },
   statusPill: { alignSelf: 'center', marginTop: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 6 },
   statusText: { color: colors.ink, fontWeight: '600' },
   bio: { textAlign: 'center', color: colors.white, marginTop: 10 },
   actions: { flexDirection: 'row', gap: 10 },
-  section: { fontSize: 16, fontWeight: '800', color: colors.ink, marginBottom: 10 },
+  section: { fontSize: 16, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 10 },
   muted: { fontSize: 12, color: colors.muted },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.skyBg, borderWidth: 1, borderColor: colors.babyBlue },
@@ -339,6 +339,6 @@ const s = StyleSheet.create({
   },
   counter: { alignSelf: 'flex-end', fontSize: 11, color: colors.muted, marginVertical: 6 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  author: { fontWeight: '800', color: colors.violet },
+  author: { fontWeight: '800', fontFamily: font.title, color: colors.violet },
   wallText: { marginTop: 6, color: colors.ink, lineHeight: 20 },
 });

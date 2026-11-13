@@ -7,7 +7,7 @@ import { useAuth } from '../auth';
 import { Avatar } from '../components/Avatar';
 import { Button, Card, ErrorText, Field } from '../components/ui';
 import { UserRow } from '../components/UserRow';
-import { colors, radius } from '../theme';
+import { colors, radius, font } from '../theme';
 
 type WallPolicy = 'everyone' | 'following';
 
@@ -200,7 +200,7 @@ const s = StyleSheet.create({
   avatarBorder: { borderWidth: 4, borderColor: colors.white },
   spinner: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
   mediaButtons: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8, padding: 12 },
-  section: { fontSize: 16, fontWeight: '800', color: colors.ink, marginBottom: 10 },
+  section: { fontSize: 16, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 10 },
   hint: { fontSize: 12, color: colors.muted, marginBottom: 8 },
   counter: { alignSelf: 'flex-end', fontSize: 11, color: colors.muted, marginTop: -6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

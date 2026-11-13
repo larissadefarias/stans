@@ -3,7 +3,7 @@ import { Image, Pressable, View, type ColorValue, type ImageSourcePropType } fro
 import { useAuth } from '../../auth';
 import { Badge, BellIcon } from '../../components/Badge';
 import { useRealtime } from '../../realtime';
-import { colors } from '../../theme';
+import { colors, font } from '../../theme';
 
 const icon = (src: ImageSourcePropType, badge = 0) => ({ color, size }: { color: ColorValue; size: number }) => (
   <View>
@@ -33,7 +33,7 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.babyBlue, height: 64, paddingTop: 6, paddingBottom: 8 },
         tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
         headerTintColor: colors.violet,
-        headerTitleStyle: { fontWeight: '800', color: colors.ink },
+        headerTitleStyle: { fontWeight: '800', fontFamily: font.title, color: colors.ink },
         sceneStyle: { backgroundColor: colors.skyBg },
       }}
     >

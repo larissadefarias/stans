@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { api, errorMessage, type ReportTarget } from '../api';
-import { colors, radius } from '../theme';
+import { colors, radius, font } from '../theme';
 import { Button, ErrorText } from './ui';
 
 export type Option = { label: string; onPress: () => void; destructive?: boolean };
@@ -93,7 +93,7 @@ const s = StyleSheet.create({
   },
   option: { paddingVertical: 16, paddingHorizontal: 24 },
   optionText: { fontSize: 16, fontWeight: '700', color: colors.ink, textAlign: 'center' },
-  title: { fontSize: 18, fontWeight: '800', color: colors.ink, marginBottom: 6 },
+  title: { fontSize: 18, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 6 },
   text: { color: colors.muted, marginBottom: 12, lineHeight: 20 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: colors.skyBg, borderWidth: 1, borderColor: colors.babyBlue },

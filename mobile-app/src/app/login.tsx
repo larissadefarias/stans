@@ -5,7 +5,7 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { API_URL, errorMessage } from '../api';
 import { useAuth } from '../auth';
 import { Button, Card, ErrorText, Field } from '../components/ui';
-import { colors, gradient } from '../theme';
+import { colors, gradient, font } from '../theme';
 
 export default function Login() {
   const { login, register } = useAuth();
@@ -74,7 +74,7 @@ const s = StyleSheet.create({
   wrap: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   logo: { width: 160, height: 80, resizeMode: 'contain', alignSelf: 'center' },
   tagline: { textAlign: 'center', color: colors.white, fontWeight: '700', marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.ink, marginBottom: 14 },
+  title: { fontSize: 22, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 14 },
   switch: { textAlign: 'center', color: colors.violet, fontWeight: '700' },
   dev: { textAlign: 'center', color: colors.white, fontSize: 11, marginTop: 16, opacity: 0.85 },
 });

@@ -5,7 +5,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Switch, Text, TextInpu
 import { api, errorMessage, type CommunityDetail } from '../../api';
 import { PostList } from '../../components/PostList';
 import { Button, Card, ErrorText } from '../../components/ui';
-import { colors, radius } from '../../theme';
+import { colors, radius, font } from '../../theme';
 
 type Picked = ImagePicker.ImagePickerAsset;
 
@@ -107,7 +107,7 @@ export default function CommunityScreen() {
             <View style={{ marginTop: 10 }}>
               <Image source={{ uri: image.uri }} style={s.preview} />
               <Pressable onPress={() => setImage(null)} style={s.removeImage} accessibilityLabel="Remover imagem">
-                <Text style={{ color: colors.white, fontWeight: '800' }}>✕</Text>
+                <Text style={{ color: colors.white, fontWeight: '800', fontFamily: font.title }}>✕</Text>
               </Pressable>
             </View>
           )}
@@ -144,7 +144,7 @@ export default function CommunityScreen() {
 }
 
 const s = StyleSheet.create({
-  title: { fontSize: 20, fontWeight: '800', color: colors.ink },
+  title: { fontSize: 20, fontWeight: '800', fontFamily: font.title, color: colors.ink },
   meta: { color: colors.muted, fontSize: 13, marginTop: 2 },
   desc: { color: colors.ink, marginTop: 8, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 10, marginTop: 14 },

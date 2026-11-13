@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { api, errorMessage } from '../api';
 import { Button, Card, ErrorText, Field } from '../components/ui';
-import { colors } from '../theme';
+import { colors, font } from '../theme';
 
 /**
  * Esqueci minha senha, em 2 passos:
@@ -91,7 +91,7 @@ export default function Forgot() {
 }
 
 const s = StyleSheet.create({
-  title: { fontSize: 20, fontWeight: '800', color: colors.ink, marginBottom: 6 },
+  title: { fontSize: 20, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 6 },
   text: { color: colors.muted, marginBottom: 14, lineHeight: 20 },
   link: { textAlign: 'center', color: colors.violet, fontWeight: '700' },
 });

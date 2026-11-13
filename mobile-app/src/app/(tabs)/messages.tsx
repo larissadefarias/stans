@@ -6,7 +6,7 @@ import { Avatar } from '../../components/Avatar';
 import { timeAgo } from '../../components/PostCard';
 import { Button, Card, ErrorText } from '../../components/ui';
 import { useRealtime } from '../../realtime';
-import { colors } from '../../theme';
+import { colors, font } from '../../theme';
 
 const titleOf = (r: Room) => (r.kind === 'dm' ? `@${r.peer ?? 'fã'}` : r.communityName ?? 'Comunidade');
 
@@ -73,11 +73,11 @@ export default function Messages() {
 const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.white, marginBottom: 8 },
   groupIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.babyBlue, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontWeight: '800', color: colors.ink, fontSize: 15 },
+  title: { flex: 1, fontWeight: '800', fontFamily: font.title, color: colors.ink, fontSize: 15 },
   time: { color: colors.muted, fontSize: 12, marginLeft: 8 },
   preview: { color: colors.muted, marginTop: 2 },
   unread: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  unreadText: { color: colors.white, fontWeight: '800', fontSize: 12 },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: 6 },
+  unreadText: { color: colors.white, fontWeight: '800', fontFamily: font.title, fontSize: 12 },
+  emptyTitle: { fontSize: 17, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 6 },
   emptyText: { color: colors.muted, marginBottom: 14, lineHeight: 20 },
 });

@@ -7,7 +7,7 @@ import { Avatar } from '../../components/Avatar';
 import { timeAgo } from '../../components/PostCard';
 import { OptionsSheet, ReportSheet, type Option } from '../../components/Sheet';
 import { ErrorText } from '../../components/ui';
-import { colors, radius } from '../../theme';
+import { colors, radius, font } from '../../theme';
 
 export default function Comments() {
   const { id, author, community } = useLocalSearchParams<{ id: string; author?: string; community?: string }>();
@@ -109,9 +109,9 @@ const s = StyleSheet.create({
   empty: { textAlign: 'center', color: colors.muted, marginTop: 24 },
   comment: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   bubble: { flex: 1, backgroundColor: colors.white, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: colors.babyBlue },
-  author: { fontWeight: '800', color: colors.violet },
+  author: { fontWeight: '800', fontFamily: font.title, color: colors.violet },
   time: { color: colors.muted, fontSize: 12 },
-  more: { color: colors.muted, fontWeight: '800', fontSize: 16 },
+  more: { color: colors.muted, fontWeight: '800', fontFamily: font.title, fontSize: 16 },
   text: { color: colors.ink, marginTop: 4, lineHeight: 20 },
   composer: { flexDirection: 'row', gap: 8, padding: 12, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.babyBlue, alignItems: 'flex-end' },
   input: {
@@ -119,5 +119,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9, fontSize: 15, color: colors.ink,
   },
   send: { backgroundColor: colors.violet, borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 10, minWidth: 76, alignItems: 'center' },
-  sendText: { color: colors.white, fontWeight: '800' },
+  sendText: { color: colors.white, fontWeight: '800', fontFamily: font.title },
 });
