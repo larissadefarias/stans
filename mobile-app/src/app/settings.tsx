@@ -2,10 +2,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { api, errorMessage, mediaUrl, type ImageKind } from '../api';
+import { api, errorMessage, mediaUrl, type ImageKind, type UserSummary } from '../api';
 import { useAuth } from '../auth';
 import { Avatar } from '../components/Avatar';
 import { Button, Card, ErrorText, Field } from '../components/ui';
+import { UserRow } from '../components/UserRow';
 import { colors, radius } from '../theme';
 
 type WallPolicy = 'everyone' | 'following';
@@ -23,6 +24,7 @@ export default function Settings() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState<ImageKind | null>(null);
+  const [blocked, setBlocked] = useState<UserSummary[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +40,7 @@ export default function Settings() {
         setLoaded(true);
       })
       .catch((e) => setError(errorMessage(e)));
+    api.blocks().then(setBlocked).catch(() => {});
   }, [user]);
 
   // Escolhe da galeria (com recorte) e envia na hora; a foto já fica salva mesmo sem apertar "Salvar perfil"
@@ -146,6 +149,22 @@ export default function Settings() {
         <Toggle label="Modo invisível" hint="Ninguém vê quando você está online no chat."
           value={invisible} onChange={setInvisible} />
       </Card>
+
+      {blocked.length > 0 && (
+        <Card>
+          <Text style={s.section}>Fãs bloqueados</Text>
+          {blocked.map((b) => (
+            <UserRow key={b.username} user={b} right={
+              <Pressable style={s.chip} accessibilityRole="button" onPress={async () => {
+                try { await api.unblock(b.username); setBlocked((l) => l.filter((x) => x.username !== b.username)); }
+                catch (e) { setError(errorMessage(e)); }
+              }}>
+                <Text style={s.chipText}>Desbloquear</Text>
+              </Pressable>
+            } />
+          ))}
+        </Card>
+      )}
 
       <ErrorText>{error}</ErrorText>
       <Button title="Salvar perfil" onPress={save} loading={saving} />

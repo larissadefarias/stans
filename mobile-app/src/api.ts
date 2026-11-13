@@ -58,7 +58,8 @@ export type ImageKind = 'avatar' | 'cover';
 /** Imagem escolhida pelo expo-image-picker (no navegador vem com `file`). */
 type PickedImage = { uri: string; mimeType?: string; fileName?: string | null; file?: File };
 
-async function uploadImage(kind: ImageKind, img: PickedImage) {
+/** 'avatar' e 'cover' já salvam no perfil; 'post' só sobe o arquivo e devolve a URL para usar no post. */
+async function uploadImage(kind: ImageKind | 'post', img: PickedImage) {
   const form = new FormData();
   if (Platform.OS === 'web') {
     form.append('image', img.file ?? (await (await fetch(img.uri)).blob()), img.fileName ?? `${kind}.jpg`);
@@ -68,7 +69,7 @@ async function uploadImage(kind: ImageKind, img: PickedImage) {
   }
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/me/${kind}`, {
+    res = await fetch(`${API_URL}${kind === 'post' ? '/uploads/image' : `/me/${kind}`}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: form,
@@ -94,7 +95,22 @@ export type Profile = {
   fandoms: { id: string; slug: string; name: string; category: Category }[];
   ratings: Partial<Record<RatingType, { total: number; week: number }>> | null;
   canRateAt: string | null;
+  followers: number; following: number; isFollowing: boolean; followsMe: boolean; iBlocked: boolean;
 };
+export type CommunityDetail = Community & { myRole: 'member' | 'mod' | 'owner' | null };
+export type UserSummary = { username: string; displayName: string; avatarUrl: string | null };
+export type Comment = { id: string; content: string; createdAt: string; authorUsername: string; authorAvatar: string | null };
+export type NotificationType = 'like' | 'comment' | 'wall' | 'rating' | 'follow';
+export type Notification = {
+  id: number; type: NotificationType; postId: string | null; read: boolean; createdAt: string;
+  actorUsername: string; actorAvatar: string | null; communityId: string | null; communityName: string | null;
+};
+export type Room = {
+  id: string; kind: 'community' | 'dm'; communityName: string | null; communityId: string | null;
+  peer: string | null; peerAvatar: string | null; lastMessage: string | null; lastAt: string | null; unread: number;
+};
+export type Message = { id: number; roomId?: string; content: string; createdAt: string; senderUsername: string };
+export type ReportTarget = 'user' | 'post' | 'comment' | 'wall';
 export type WallPost = {
   id: number; parentId: number | null; content: string; createdAt: string;
   authorUsername: string; authorAvatar: string | null;
@@ -127,8 +143,18 @@ export const api = {
     request<Post[]>('GET', `/feed${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
   communityPosts: (id: string, cursor?: string) =>
     request<Post[]>('GET', `/communities/${id}/posts${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
-  createPost: (communityId: string, content: string, isSpoiler: boolean) =>
-    request<{ id: string }>('POST', `/communities/${communityId}/posts`, { content, isSpoiler }),
+  createPost: (communityId: string, content: string, isSpoiler: boolean, imageUrl?: string) =>
+    request<{ id: string }>('POST', `/communities/${communityId}/posts`, { content, isSpoiler, imageUrl }),
+  comments: (postId: string) => request<Comment[]>('GET', `/posts/${postId}/comments`),
+  addComment: (postId: string, content: string) => request<{ id: string }>('POST', `/posts/${postId}/comments`, { content }),
+  deleteComment: (id: string) => request<void>('DELETE', `/comments/${id}`),
+
+  community: (id: string) => request<CommunityDetail>('GET', `/communities/${id}`),
+  createCommunity: (c: { slug: string; name: string; description: string; category: Category }) =>
+    request<{ id: string; roomId: string }>('POST', '/communities', c),
+  communityRoom: (id: string) => request<{ roomId: string }>('POST', `/communities/${id}/room`),
+  search: (term: string) =>
+    request<{ users: UserSummary[]; communities: Community[] }>('GET', `/search?q=${encodeURIComponent(term)}`),
   deletePost: (id: string) => request<void>('DELETE', `/posts/${id}`),
   like: (postId: string) => request<{ liked: boolean }>('POST', `/posts/${postId}/like`),
 
@@ -148,6 +174,29 @@ export const api = {
   postWall: (username: string, content: string, parentId?: number) =>
     request<{ id: number }>('POST', `/users/${encodeURIComponent(username)}/wall`, { content, parentId }),
   deleteWall: (id: number) => request<void>('DELETE', `/wall/${id}`),
+
+  follow: (username: string) => request<void>('POST', `/users/${encodeURIComponent(username)}/follow`),
+  unfollow: (username: string) => request<void>('DELETE', `/users/${encodeURIComponent(username)}/follow`),
+  follows: (username: string, kind: 'followers' | 'following') =>
+    request<UserSummary[]>('GET', `/users/${encodeURIComponent(username)}/follows?kind=${kind}`),
+  block: (username: string) => request<void>('POST', `/users/${encodeURIComponent(username)}/block`),
+  unblock: (username: string) => request<void>('DELETE', `/users/${encodeURIComponent(username)}/block`),
+  blocks: () => request<UserSummary[]>('GET', '/me/blocks'),
+  report: (targetType: ReportTarget, targetId: string, reason: string) =>
+    request<void>('POST', '/reports', { targetType, targetId, reason }),
+
+  notifications: (before?: number) => request<Notification[]>('GET', `/notifications${before ? `?before=${before}` : ''}`),
+  unreadCount: () => request<{ count: number }>('GET', '/notifications/unread-count'),
+  markNotificationsRead: () => request<void>('POST', '/notifications/read'),
+
+  forgotPassword: (email: string) => request<void>('POST', '/auth/forgot', { email }),
+  resetPassword: (token: string, password: string) => request<void>('POST', '/auth/reset', { token, password }),
+
+  rooms: () => request<Room[]>('GET', '/rooms'),
+  messages: (roomId: string, before?: number) =>
+    request<Message[]>('GET', `/rooms/${roomId}/messages${before ? `?before=${before}` : ''}`),
+  markRoomRead: (roomId: string, lastId: number) => request<void>('POST', `/rooms/${roomId}/read`, { lastId }),
+  openDm: (username: string) => request<{ roomId: string }>('POST', `/dm/${encodeURIComponent(username)}`),
 };
 
 /** Socket.IO autenticado com o mesmo token (para o chat em tempo real). */
@@ -175,6 +224,12 @@ export function errorMessage(e: unknown): string {
     not_a_member: 'Entre na comunidade para poder postar.',
     not_found: 'Não encontrado (talvez já tenha sido apagado).',
     too_many_requests: 'Muitas tentativas. Espere um minuto.',
+    blocked: 'Não é possível interagir com este fã.',
+    cannot_block_self: 'Você não pode bloquear a si mesmo.',
+    cannot_follow_self: 'Você não pode seguir a si mesmo.',
+    cannot_dm_self: 'Você não pode mandar mensagem para si mesmo.',
+    invalid_or_expired_token: 'Código inválido ou expirado. Peça um novo.',
+    not_in_room: 'Você não participa desta conversa.',
   };
   if (e.status === 429 && e.code === 'unknown') return map.too_many_requests;
   return map[e.code] ?? `Erro (${e.code}).`;

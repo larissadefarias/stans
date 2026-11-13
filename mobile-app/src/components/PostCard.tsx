@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { api, type Post } from '../api';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { api, mediaUrl, type Post } from '../api';
 import { colors, radius } from '../theme';
 import { Avatar } from './Avatar';
+import { OptionsSheet, ReportSheet, type Option } from './Sheet';
 import { Card } from './ui';
 
-const timeAgo = (iso: string) => {
+export const timeAgo = (iso: string) => {
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (min < 1) return 'agora';
   if (min < 60) return `${min} min`;
@@ -15,12 +16,15 @@ const timeAgo = (iso: string) => {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 };
 
-type Props = { post: Post; showCommunity?: boolean; canDelete?: boolean; onDeleted?: () => void };
+type Props = { post: Post; showCommunity?: boolean; canDelete?: boolean; onDeleted?: () => void; hideCommentsLink?: boolean };
 
-export function PostCard({ post, showCommunity = true, canDelete, onDeleted }: Props) {
+export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hideCommentsLink }: Props) {
   const [revealed, setRevealed] = useState(!post.isSpoiler);
   const [liked, setLiked] = useState(post.likedByMe);
   const [likes, setLikes] = useState(post.likes);
+  const [menu, setMenu] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const image = mediaUrl(post.imageUrl);
 
   const toggleLike = async () => {
     // Atualiza na hora e corrige se o servidor discordar
@@ -35,14 +39,24 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted }: P
     }
   };
 
-  const remove = async () => {
-    try { await api.deletePost(post.id); onDeleted?.(); } catch { /* já apagado */ }
-  };
+  const openComments = () => router.push({
+    pathname: '/p/[id]',
+    params: { id: post.id, author: post.authorUsername, community: post.communityName },
+  });
+
+  const options: Option[] = [
+    ...(canDelete ? [{ label: 'Apagar post', destructive: true, onPress: async () => {
+      try { await api.deletePost(post.id); onDeleted?.(); } catch { /* já apagado */ }
+    } }] : []),
+    ...(!canDelete ? [{ label: 'Denunciar post', destructive: true, onPress: () => setReporting(true) }] : []),
+  ];
 
   return (
     <Card>
       <View style={s.head}>
-        <Avatar url={post.authorAvatar} name={post.authorUsername} size={40} />
+        <Pressable onPress={() => router.push(`/u/${post.authorUsername}`)}>
+          <Avatar url={post.authorAvatar} name={post.authorUsername} size={40} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Pressable onPress={() => router.push(`/u/${post.authorUsername}`)}>
             <Text style={s.author}>@{post.authorUsername}</Text>
@@ -55,14 +69,20 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted }: P
             {timeAgo(post.createdAt)}
           </Text>
         </View>
+        <Pressable onPress={() => setMenu(true)} hitSlop={10} accessibilityLabel="Opções do post">
+          <Text style={s.more}>⋯</Text>
+        </Pressable>
       </View>
 
       {revealed ? (
-        <Text style={s.content}>{post.content}</Text>
+        <>
+          <Text style={s.content}>{post.content}</Text>
+          {image && <Image source={{ uri: image }} style={s.image} resizeMode="cover" accessibilityLabel="Imagem do post" />}
+        </>
       ) : (
         <Pressable onPress={() => setRevealed(true)} style={s.spoiler} accessibilityRole="button">
           <Text style={s.spoilerTitle}>⚠️ Contém spoiler</Text>
-          <Text style={s.spoilerHint}>Toque para ver</Text>
+          <Text style={s.spoilerHint}>Toque para ver{image ? ' (tem imagem)' : ''}</Text>
         </Pressable>
       )}
 
@@ -75,24 +95,28 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted }: P
           accessibilityLabel={liked ? 'Descurtir' : 'Curtir'} style={s.action}>
           <Text style={[s.actionText, liked && { color: colors.pink }]}>{liked ? '♥' : '♡'} {likes}</Text>
         </Pressable>
-        <Text style={s.actionText}>💬 {post.comments}</Text>
-        {canDelete && (
-          <Pressable onPress={remove} hitSlop={8} style={{ marginLeft: 'auto' }}>
-            <Text style={{ color: colors.pink, fontSize: 12, fontWeight: '700' }}>Apagar</Text>
+        {hideCommentsLink ? (
+          <Text style={s.actionText}>💬 {post.comments}</Text>
+        ) : (
+          <Pressable onPress={openComments} hitSlop={8} accessibilityRole="button" accessibilityLabel="Ver comentários" style={s.action}>
+            <Text style={s.actionText}>💬 {post.comments} {post.comments === 1 ? 'comentário' : 'comentários'}</Text>
           </Pressable>
         )}
       </View>
+
+      <OptionsSheet visible={menu} options={options} onClose={() => setMenu(false)} />
+      <ReportSheet target={reporting ? { type: 'post', id: post.id } : null} onClose={() => setReporting(false)} />
     </Card>
   );
 }
 
 const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.babyBlue, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontWeight: '800', color: colors.violet, fontSize: 17 },
   author: { fontWeight: '800', color: colors.ink },
   meta: { fontSize: 12, color: colors.muted },
+  more: { color: colors.muted, fontWeight: '800', fontSize: 20, paddingHorizontal: 4 },
   content: { fontSize: 15, color: colors.ink, lineHeight: 21 },
+  image: { width: '100%', aspectRatio: 4 / 3, borderRadius: 12, marginTop: 10, backgroundColor: colors.skyBg },
   spoiler: { backgroundColor: colors.ink, borderRadius: 12, paddingVertical: 22, alignItems: 'center' },
   spoilerTitle: { color: colors.white, fontWeight: '800' },
   spoilerHint: { color: colors.lilac, fontSize: 12, marginTop: 2 },

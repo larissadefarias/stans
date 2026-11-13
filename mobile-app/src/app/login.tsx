@@ -51,6 +51,11 @@ export default function Login() {
               placeholder={isRegister ? 'mínimo 8 caracteres' : ''} onSubmitEditing={submit} />
             <ErrorText>{error}</ErrorText>
             <Button title={isRegister ? 'Cadastrar' : 'Entrar'} onPress={submit} loading={loading} />
+            {!isRegister && (
+              <Pressable onPress={() => router.push('/forgot')} style={{ marginTop: 14 }}>
+                <Text style={s.switch}>Esqueci minha senha</Text>
+              </Pressable>
+            )}
             <Pressable onPress={() => { setMode(isRegister ? 'login' : 'register'); setError(null); }} style={{ marginTop: 14 }}>
               <Text style={s.switch}>
                 {isRegister ? 'Já tenho conta — entrar' : 'Ainda não é fã? Criar conta'}

@@ -1,15 +1,29 @@
-import { Redirect, Tabs } from 'expo-router';
-import { Image, type ColorValue, type ImageSourcePropType } from 'react-native';
+import { Redirect, router, Tabs } from 'expo-router';
+import { Image, Pressable, View, type ColorValue, type ImageSourcePropType } from 'react-native';
 import { useAuth } from '../../auth';
+import { Badge, BellIcon } from '../../components/Badge';
+import { useRealtime } from '../../realtime';
 import { colors } from '../../theme';
 
-const icon = (src: ImageSourcePropType) => ({ color, size }: { color: ColorValue; size: number }) => (
-  <Image source={src} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />
+const icon = (src: ImageSourcePropType, badge = 0) => ({ color, size }: { color: ColorValue; size: number }) => (
+  <View>
+    <Image source={src} style={{ width: size, height: size, tintColor: color }} resizeMode="contain" />
+    <Badge count={badge} />
+  </View>
 );
 
 export default function TabsLayout() {
   const { user, ready } = useAuth();
+  const { unreadNotifications, unreadMessages } = useRealtime();
   if (ready && !user) return <Redirect href="/login" />;
+
+  const bell = () => (
+    <Pressable onPress={() => router.push('/notifications')} hitSlop={10} style={{ marginRight: 18 }}
+      accessibilityLabel={`Notificações${unreadNotifications ? `, ${unreadNotifications} novas` : ''}`}>
+      <BellIcon />
+      <Badge count={unreadNotifications} />
+    </Pressable>
+  );
 
   return (
     <Tabs
@@ -23,9 +37,10 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.skyBg },
       }}
     >
-      <Tabs.Screen name="feed" options={{ title: 'Início', tabBarIcon: icon(require('../../../assets/home.png')) }} />
+      <Tabs.Screen name="feed" options={{ title: 'Início', headerRight: bell, tabBarIcon: icon(require('../../../assets/home.png')) }} />
       <Tabs.Screen name="communities" options={{ title: 'Comunidades', tabBarIcon: icon(require('../../../assets/comunidade.png')) }} />
-      <Tabs.Screen name="me" options={{ title: 'Perfil', tabBarIcon: icon(require('../../../assets/perfil.png')) }} />
+      <Tabs.Screen name="messages" options={{ title: 'Mensagens', tabBarIcon: icon(require('../../../assets/mensagem.png'), unreadMessages) }} />
+      <Tabs.Screen name="me" options={{ title: 'Perfil', headerRight: undefined, tabBarIcon: icon(require('../../../assets/perfil.png')) }} />
     </Tabs>
   );
 }

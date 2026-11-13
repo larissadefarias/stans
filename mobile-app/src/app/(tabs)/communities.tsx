@@ -1,23 +1,14 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { api, errorMessage, type Category, type Community } from '../../api';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { api, errorMessage, type Category, type Community, type UserSummary } from '../../api';
 import { useAuth } from '../../auth';
+import { CATEGORIES as ALL, categoryLabel as labelOf } from '../../categories';
 import { Card, ErrorText } from '../../components/ui';
+import { UserRow } from '../../components/UserRow';
 import { colors, radius } from '../../theme';
 
-const CATEGORIES: { key: Category | null; label: string }[] = [
-  { key: null, label: 'Todas' },
-  { key: 'anime', label: 'Anime' },
-  { key: 'kpop', label: 'K-pop' },
-  { key: 'series', label: 'Séries' },
-  { key: 'games', label: 'Games' },
-  { key: 'music', label: 'Música' },
-  { key: 'sports', label: 'Esportes' },
-  { key: 'teams', label: 'Times' },
-  { key: 'players', label: 'Jogadores' },
-];
-const labelOf = (c: Category) => CATEGORIES.find((x) => x.key === c)?.label ?? c;
+const CATEGORIES: { key: Category | null; label: string }[] = [{ key: null, label: 'Todas' }, ...ALL];
 
 export default function Communities() {
   const { user } = useAuth();
@@ -26,6 +17,30 @@ export default function Communities() {
   const [mine, setMine] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [term, setTerm] = useState('');
+  const [results, setResults] = useState<{ users: UserSummary[]; communities: Community[] } | null>(null);
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Comunidades',
+      headerRight: () => (
+        <Pressable onPress={() => router.push('/new-community')} hitSlop={10} style={{ marginRight: 16 }} accessibilityRole="button">
+          <Text style={{ color: colors.violet, fontWeight: '800' }}>+ Criar</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
+
+  // Busca enquanto digita (espera 300 ms sem digitar para não chamar a API a cada letra)
+  useEffect(() => {
+    const t = term.trim();
+    if (!t) { setResults(null); return; }
+    const timer = setTimeout(() => {
+      api.search(t).then(setResults).catch((e) => setError(errorMessage(e)));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [term]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -42,7 +57,8 @@ export default function Communities() {
     }
   }, [category, user]);
 
-  useEffect(() => { void load(); }, [load]);
+  // Recarrega ao voltar (ex.: depois de criar uma comunidade ou entrar numa)
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const toggle = async (c: Community) => {
     const member = mine.has(c.id);
@@ -64,6 +80,37 @@ export default function Communities() {
 
   return (
     <View style={{ flex: 1 }}>
+      <View style={s.searchBox}>
+        <Image source={require('../../../assets/search.png')} style={s.searchIcon} />
+        <TextInput value={term} onChangeText={setTerm} placeholder="Buscar fãs e comunidades" placeholderTextColor={colors.muted}
+          style={s.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Buscar" />
+        {!!term && (
+          <Pressable onPress={() => setTerm('')} hitSlop={10} accessibilityLabel="Limpar busca">
+            <Text style={{ color: colors.muted, fontWeight: '800' }}>✕</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {results ? (
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
+          <Card>
+            <Text style={s.section}>Fãs</Text>
+            {results.users.length === 0 ? <Text style={s.emptySmall}>Nenhum fã encontrado.</Text>
+              : results.users.map((u) => <UserRow key={u.username} user={u} />)}
+          </Card>
+          <Card>
+            <Text style={s.section}>Comunidades</Text>
+            {results.communities.length === 0 ? <Text style={s.emptySmall}>Nenhuma comunidade encontrada.</Text>
+              : results.communities.map((c) => (
+                <Pressable key={c.id} style={{ paddingVertical: 8 }}
+                  onPress={() => router.push({ pathname: '/c/[id]', params: { id: c.id, name: c.name } })}>
+                  <Text style={s.name}>{c.name}</Text>
+                  <Text style={s.meta}>{labelOf(c.category)} · {c.members} {c.members === 1 ? 'fã' : 'fãs'}</Text>
+                </Pressable>
+              ))}
+          </Card>
+        </ScrollView>
+      ) : (<>
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
           {CATEGORIES.map((c) => {
@@ -106,11 +153,20 @@ export default function Communities() {
           );
         }}
       />
+      </>)}
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, paddingHorizontal: 14,
+    backgroundColor: colors.white, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.babyBlue,
+  },
+  searchIcon: { width: 18, height: 18, tintColor: colors.muted },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 15, color: colors.ink },
+  section: { fontSize: 16, fontWeight: '800', color: colors.ink, marginBottom: 4 },
+  emptySmall: { color: colors.muted, paddingVertical: 6 },
   chips: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.babyBlue },
   chipActive: { backgroundColor: colors.violet, borderColor: colors.violet },
