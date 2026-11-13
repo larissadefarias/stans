@@ -242,10 +242,7 @@ const postSelect = `select p.id, p.community_id as "communityId", c.name as "com
   p.is_spoiler as "isSpoiler", p.tags, p.created_at as "createdAt", u.username as "authorUsername", u.avatar_url as "authorAvatar",
   (select count(*)::int from likes l where l.post_id=p.id) as likes,
   (select count(*)::int from comments k where k.post_id=p.id) as comments,
-  exists(select 1 from likes l where l.post_id=p.id and l.user_id=$1) as "likedByMe",
-  coalesce((select jsonb_object_agg(type, n) from (select type, count(*)::int as n from post_ratings r
-    where r.post_id=p.id group by type) t), '{}'::jsonb) as ratings,
-  (select r.type from post_ratings r where r.post_id=p.id and r.user_id=$1) as "myRating"
+  exists(select 1 from likes l where l.post_id=p.id and l.user_id=$1) as "likedByMe"
   from posts p join users u on u.id=p.author_id join communities c on c.id=p.community_id`;
 
 // Paginação por cursor: ?cursor=<createdAt>|<id> (sem OFFSET, não repete nem pula posts)
@@ -297,23 +294,6 @@ routes.post('/posts/:id/like', auth, async (req, res) => {
     if (p) await notify(req, p.author_id, uidOf(res), 'like', req.params.id as string);
   }
   res.json({ liked: !del.length });
-});
-
-// Avalia um post (Superfan/Cool/Hot/Boring). Mandar o mesmo tipo de novo tira a avaliação; outro tipo troca.
-routes.post('/posts/:id/rating', auth, async (req, res) => {
-  const { type } = z.object({ type: z.enum(['superfan', 'cool', 'hot', 'boring']) }).parse(req.body);
-  const me = uidOf(res);
-  const [p] = await q<{ author_id: string }>('select author_id from posts where id=$1', [req.params.id]);
-  if (!p) throw new HttpError(404, 'not_found');
-  await assertNotBlocked(me, p.author_id);
-  const removed = await q('delete from post_ratings where post_id=$1 and user_id=$2 and type=$3 returning 1', [req.params.id, me, type]);
-  if (!removed.length) {
-    await q(`insert into post_ratings(post_id, user_id, type) values($1,$2,$3)
-      on conflict (post_id, user_id) do update set type=excluded.type, created_at=now()`, [req.params.id, me, type]);
-  }
-  const [r] = await q<{ ratings: Record<string, number> }>(`select coalesce(jsonb_object_agg(type, n), '{}'::jsonb) as ratings
-    from (select type, count(*)::int as n from post_ratings where post_id=$1 group by type) t`, [req.params.id]);
-  res.json({ myRating: removed.length ? null : type, ratings: r.ratings });
 });
 
 routes.get('/posts/:id/comments', auth, async (req, res) => {

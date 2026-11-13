@@ -116,12 +116,10 @@ export type WallPost = {
   authorUsername: string; authorAvatar: string | null;
 };
 
-export type PostRatingType = 'superfan' | 'cool' | 'hot' | 'boring';
 export type Post = {
   id: string; communityId: string; communityName: string; content: string; imageUrl: string | null;
   isSpoiler: boolean; tags: string[]; createdAt: string; authorUsername: string; authorAvatar: string | null;
   likes: number; comments: number; likedByMe: boolean;
-  ratings?: Partial<Record<PostRatingType, number>>; myRating?: PostRatingType | null;
 };
 /** Cursor para a próxima página: depois do último post recebido. */
 export const cursorAfter = (posts: Post[]) => {
@@ -159,8 +157,6 @@ export const api = {
     request<{ users: UserSummary[]; communities: Community[] }>('GET', `/search?q=${encodeURIComponent(term)}`),
   deletePost: (id: string) => request<void>('DELETE', `/posts/${id}`),
   like: (postId: string) => request<{ liked: boolean }>('POST', `/posts/${postId}/like`),
-  ratePost: (postId: string, type: PostRatingType) =>
-    request<{ myRating: PostRatingType | null; ratings: Partial<Record<PostRatingType, number>> }>('POST', `/posts/${postId}/rating`, { type }),
 
   profile: (username: string) => request<Profile>('GET', `/users/${encodeURIComponent(username)}`),
   setStatus: (text: string | null, emoji: string | null, expiresInHours: number | null) =>

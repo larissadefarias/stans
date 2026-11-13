@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { api, mediaUrl, type Post, type PostRatingType } from '../api';
-import { RATINGS } from '../ratings';
+import { api, mediaUrl, type Post } from '../api';
 import { colors, radius, font } from '../theme';
 import { Avatar } from './Avatar';
 import { OptionsSheet, ReportSheet, type Option } from './Sheet';
@@ -25,27 +24,8 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
   const [likes, setLikes] = useState(post.likes);
   const [menu, setMenu] = useState(false);
   const [reporting, setReporting] = useState(false);
-  const [myRating, setMyRating] = useState<PostRatingType | null>(post.myRating ?? null);
-  const [ratings, setRatings] = useState(post.ratings ?? {});
   const image = mediaUrl(post.imageUrl);
 
-  const rate = async (type: PostRatingType) => {
-    // Atualiza na hora; o servidor devolve a contagem certa logo depois
-    const prev = { myRating, ratings };
-    const next = { ...ratings };
-    if (myRating) next[myRating] = Math.max(0, (next[myRating] ?? 0) - 1);
-    if (myRating !== type) next[type] = (next[type] ?? 0) + 1;
-    setMyRating(myRating === type ? null : type);
-    setRatings(next);
-    try {
-      const r = await api.ratePost(post.id, type);
-      setMyRating(r.myRating);
-      setRatings(r.ratings);
-    } catch {
-      setMyRating(prev.myRating);
-      setRatings(prev.ratings);
-    }
-  };
 
   const toggleLike = async () => {
     // Atualiza na hora e corrige se o servidor discordar
@@ -111,21 +91,6 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
         <View style={s.tags}>{post.tags.map((t) => <Text key={t} style={s.tag}>#{t}</Text>)}</View>
       )}
 
-      <View style={s.rates}>
-        {RATINGS.map((r) => {
-          const active = myRating === r.type;
-          const n = ratings[r.type] ?? 0;
-          return (
-            <Pressable key={r.type} onPress={() => rate(r.type)} hitSlop={4} accessibilityRole="button"
-              accessibilityLabel={`${r.label}${n ? `, ${n}` : ''}`} accessibilityState={{ selected: active }}
-              style={[s.rate, active && { borderColor: r.color, backgroundColor: colors.skyBg }]}>
-              <Image source={r.icon} style={s.rateIcon} accessibilityIgnoresInvertColors />
-              {n > 0 && <Text style={[s.rateCount, active && { color: colors.ink }]}>{n}</Text>}
-            </Pressable>
-          );
-        })}
-      </View>
-
       <View style={s.actions}>
         <Pressable onPress={toggleLike} hitSlop={8} accessibilityRole="button"
           accessibilityLabel={liked ? 'Descurtir' : 'Curtir'} style={s.action}>
@@ -158,13 +123,6 @@ const s = StyleSheet.create({
   spoilerHint: { color: colors.lilac, fontSize: 12, marginTop: 2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   tag: { color: colors.violet, fontSize: 13, fontWeight: '600' },
-  rates: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  rate: {
-    flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.babyBlue,
-  },
-  rateIcon: { width: 20, height: 20 },
-  rateCount: { fontSize: 13, fontWeight: '700', color: colors.muted },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.skyBg },
   action: { borderRadius: radius.pill },
   actionText: { fontSize: 14, color: colors.muted, fontWeight: '700' },
