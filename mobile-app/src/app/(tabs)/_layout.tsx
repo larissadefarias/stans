@@ -45,7 +45,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.skyBg },
       }}
     >
-      <Tabs.Screen name="feed" options={{ title: 'Início', headerRight: bell, tabBarIcon: icon(require('../../../assets/home.png')) }} />
+      <Tabs.Screen name="feed" options={{ title: 'Início', headerRight: () => <View style={{ flexDirection: 'row', alignItems: 'center' }}>{themeToggle()}{bell()}</View>, tabBarIcon: icon(require('../../../assets/home.png')) }} />
       <Tabs.Screen name="communities" options={{ title: 'Comunidades', tabBarIcon: icon(require('../../../assets/comunidade.png')) }} />
       <Tabs.Screen name="messages" options={{ title: 'Mensagens', tabBarIcon: icon(require('../../../assets/mensagem.png'), unreadMessages) }} />
       <Tabs.Screen name="me" options={{ title: 'Perfil', headerRight: themeToggle, tabBarIcon: icon(require('../../../assets/perfil.png')) }} />
