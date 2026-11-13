@@ -2,8 +2,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { api, errorMessage, type CommunityDetail } from '../../api';
+import { api, ApiError, errorMessage, type CommunityDetail } from '../../api';
 import { PostList } from '../../components/PostList';
+import { RatingButtons } from '../../components/RatingButtons';
+import type { RatingType } from '../../ratings';
 import { Button, Card, ErrorText } from '../../components/ui';
 import { colors, radius, font } from '../../theme';
 
@@ -26,6 +28,17 @@ export default function CommunityScreen() {
   const fetchPage = useCallback((cursor?: string) => api.communityPosts(id, cursor), [id, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const member = !!community?.myRole;
+
+  const rate = async (type: RatingType) => {
+    setError(null);
+    try {
+      await api.rateCommunity(id, type);
+      await loadCommunity();
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'weekly_limit' && community) setCommunity({ ...community, canRateAt: e.body.retryAt });
+      setError(e instanceof ApiError && e.code === 'weekly_limit' ? 'Você já avaliou esta comunidade nesta semana.' : errorMessage(e));
+    }
+  };
 
   const toggleMembership = async () => {
     setBusy(true);
@@ -93,6 +106,9 @@ export default function CommunityScreen() {
                 </View>
               )}
             </View>
+            <Text style={s.rateTitle}>Avalie esta comunidade</Text>
+            <RatingButtons counts={community.ratings} canRateAt={community.canRateAt} onRate={rate}
+              isOwnProfile={community.myRole === 'owner'} subject="esta comunidade" />
           </>
         )}
       </Card>
@@ -144,6 +160,7 @@ export default function CommunityScreen() {
 }
 
 const s = StyleSheet.create({
+  rateTitle: { marginTop: 14, marginBottom: 8, fontWeight: '800', fontFamily: font.title, color: colors.ink },
   title: { fontSize: 20, fontWeight: '800', fontFamily: font.title, color: colors.ink },
   meta: { color: colors.muted, fontSize: 13, marginTop: 2 },
   desc: { color: colors.ink, marginTop: 8, lineHeight: 20 },

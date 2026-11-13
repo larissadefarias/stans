@@ -41,7 +41,44 @@ social.get('/communities/:id', auth, async (req, res) => {
       (select role from memberships m where m.community_id=c.id and m.user_id=$2) as "myRole"
       from communities c where c.id=$1`, [req.params.id, uidOf(res)]);
   if (!c) throw new HttpError(404, 'not_found');
-  res.json(c);
+  const rows = await q<{ type: string; total: number; week: number }>(
+    `select type, count(*)::int as total, count(*) filter (where created_at > now() - interval '7 days')::int as week
+     from community_ratings where community_id=$1 group by type`, [req.params.id]);
+  const [last] = await q<{ at: string }>(`select created_at + interval '7 days' as at from community_ratings
+    where rater_id=$1 and community_id=$2 and created_at > now() - interval '7 days'`, [uidOf(res), req.params.id]);
+  res.json({
+    ...c,
+    ratings: Object.fromEntries(rows.map(r => [r.type, { total: r.total, week: r.week }])),
+    canRateAt: last?.at ?? null,
+  });
+});
+
+/* Avaliação de comunidade: anônima, 1 voto por semana por comunidade; o dono não avalia a própria. */
+social.post('/communities/:id/ratings', auth, async (req, res) => {
+  const { type } = z.object({ type: z.enum(['superfan', 'cool', 'hot', 'boring']) }).parse(req.body);
+  const me = uidOf(res);
+  const c = await pool.connect();
+  try {
+    await c.query('begin');
+    const t = (await c.query('select id, owner_id from communities where id=$1', [req.params.id])).rows[0];
+    if (!t) throw new HttpError(404, 'not_found');
+    if (t.owner_id === me) throw new HttpError(400, 'cannot_rate_own_community');
+    const old = await c.query(`select 1 from users where id=$1 and created_at < now() - interval '24 hours'`, [me]);
+    if (!old.rowCount) throw new HttpError(403, 'account_too_new');
+    // Trava por par (votante, comunidade) para requisições simultâneas não furarem o limite
+    await c.query('select pg_advisory_xact_lock(hashtext($1))', ['c' + me + t.id]);
+    const last = await c.query(`select created_at + interval '7 days' as at from community_ratings
+      where rater_id=$1 and community_id=$2 and created_at > now() - interval '7 days'`, [me, t.id]);
+    if (last.rowCount) throw new HttpError(429, 'weekly_limit', { retryAt: last.rows[0].at });
+    await c.query('insert into community_ratings(rater_id, community_id, type) values($1,$2,$3)', [me, t.id, type]);
+    await c.query('commit');
+    res.status(201).end();
+  } catch (e) {
+    await c.query('rollback');
+    throw e;
+  } finally {
+    c.release();
+  }
 });
 
 // Garante que a comunidade tem sala de chat (as comunidades de exemplo foram criadas sem sala) e coloca o membro nela

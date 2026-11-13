@@ -114,11 +114,12 @@ create table messages (
 );
 create index on messages (room_id, id desc);
 
-create table post_ratings (
-  post_id uuid not null references posts on delete cascade,
-  user_id uuid not null references users on delete cascade,
+create table community_ratings (
+  id bigserial primary key,
+  rater_id uuid not null references users on delete cascade,
+  community_id uuid not null references communities on delete cascade,
   type text not null check (type in ('superfan','cool','hot','boring')),
-  created_at timestamptz not null default now(),
-  primary key (post_id, user_id)
+  created_at timestamptz not null default now()
 );
-create index on post_ratings (post_id, type);
+create index on community_ratings (rater_id, community_id, created_at desc);
+create index on community_ratings (community_id);

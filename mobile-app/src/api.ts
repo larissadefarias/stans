@@ -97,7 +97,10 @@ export type Profile = {
   canRateAt: string | null;
   followers: number; following: number; isFollowing: boolean; followsMe: boolean; iBlocked: boolean;
 };
-export type CommunityDetail = Community & { myRole: 'member' | 'mod' | 'owner' | null };
+export type CommunityDetail = Community & {
+  myRole: 'member' | 'mod' | 'owner' | null;
+  ratings: Partial<Record<RatingType, { total: number; week: number }>>; canRateAt: string | null;
+};
 export type UserSummary = { username: string; displayName: string; avatarUrl: string | null };
 export type Comment = { id: string; content: string; createdAt: string; authorUsername: string; authorAvatar: string | null };
 export type NotificationType = 'like' | 'comment' | 'wall' | 'rating' | 'follow';
@@ -166,6 +169,7 @@ export const api = {
   }>) => request<void>('PATCH', '/me/settings', s),
   uploadImage,
   removeImage: (kind: ImageKind) => request<void>('DELETE', `/me/${kind}`),
+  rateCommunity: (id: string, type: RatingType) => request<void>('POST', `/communities/${id}/ratings`, { type }),
   rate: (username: string, type: RatingType) =>
     request<void>('POST', `/users/${encodeURIComponent(username)}/ratings`, { type }),
 

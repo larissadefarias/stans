@@ -7,11 +7,12 @@ type Props = {
   canRateAt: string | null; // vem de GET /users/:username
   onRate: (type: RatingType) => void;
   isOwnProfile?: boolean;
+  subject?: string; // "este fã" ou "esta comunidade"
 };
 
 const daysLeft = (iso: string) => Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
 
-export function RatingButtons({ counts, canRateAt, onRate, isOwnProfile }: Props) {
+export function RatingButtons({ counts, canRateAt, onRate, isOwnProfile, subject = 'este fã' }: Props) {
   const locked = !!canRateAt && new Date(canRateAt) > new Date();
   const off = locked || isOwnProfile;
 
@@ -33,7 +34,7 @@ export function RatingButtons({ counts, canRateAt, onRate, isOwnProfile }: Props
           </Pressable>
         ))}
       </View>
-      {locked && <Text style={s.hint}>Você já avaliou este fã. Disponível em {daysLeft(canRateAt!)} dia(s).</Text>}
+      {locked && <Text style={s.hint}>Você já avaliou {subject}. Disponível em {daysLeft(canRateAt!)} dia(s).</Text>}
     </View>
   );
 }
