@@ -2,11 +2,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { api, errorMessage, mediaUrl, type ImageKind } from '../api';
+import { api, errorMessage, mediaUrl, type ImageKind, type UserSummary } from '../api';
 import { useAuth } from '../auth';
 import { Avatar } from '../components/Avatar';
 import { Button, Card, ErrorText, Field } from '../components/ui';
-import { colors, radius } from '../theme';
+import { UserRow } from '../components/UserRow';
+import { colors, radius, font, setThemePref, themePref } from '../theme';
 
 type WallPolicy = 'everyone' | 'following';
 
@@ -23,6 +24,7 @@ export default function Settings() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState<ImageKind | null>(null);
+  const [blocked, setBlocked] = useState<UserSummary[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +40,7 @@ export default function Settings() {
         setLoaded(true);
       })
       .catch((e) => setError(errorMessage(e)));
+    api.blocks().then(setBlocked).catch(() => {});
   }, [user]);
 
   // Escolhe da galeria (com recorte) e envia na hora; a foto já fica salva mesmo sem apertar "Salvar perfil"
@@ -139,6 +142,20 @@ export default function Settings() {
       </Card>
 
       <Card>
+        <Text style={s.section}>Aparência</Text>
+        <Text style={s.hint}>Muda na hora (o app recarrega).</Text>
+        <View style={s.chips}>
+          {([['auto', '📱 Automático'], ['light', '☀️ Claro'], ['dark', '🌙 Escuro']] as const).map(([value, label]) => (
+            <Pressable key={value} onPress={() => value !== themePref && setThemePref(value)} accessibilityRole="radio"
+              accessibilityState={{ selected: themePref === value }}
+              style={[s.chip, themePref === value && s.chipActive]}>
+              <Text style={[s.chipText, themePref === value && { color: colors.white }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
         <Text style={s.section}>Privacidade</Text>
         <Toggle label="Ocultar minhas avaliações" hint="Os outros fãs ainda podem te avaliar, mas não veem os totais."
           value={hideRatings} onChange={setHideRatings} />
@@ -146,6 +163,22 @@ export default function Settings() {
         <Toggle label="Modo invisível" hint="Ninguém vê quando você está online no chat."
           value={invisible} onChange={setInvisible} />
       </Card>
+
+      {blocked.length > 0 && (
+        <Card>
+          <Text style={s.section}>Fãs bloqueados</Text>
+          {blocked.map((b) => (
+            <UserRow key={b.username} user={b} right={
+              <Pressable style={s.chip} accessibilityRole="button" onPress={async () => {
+                try { await api.unblock(b.username); setBlocked((l) => l.filter((x) => x.username !== b.username)); }
+                catch (e) { setError(errorMessage(e)); }
+              }}>
+                <Text style={s.chipText}>Desbloquear</Text>
+              </Pressable>
+            } />
+          ))}
+        </Card>
+      )}
 
       <ErrorText>{error}</ErrorText>
       <Button title="Salvar perfil" onPress={save} loading={saving} />
@@ -181,7 +214,7 @@ const s = StyleSheet.create({
   avatarBorder: { borderWidth: 4, borderColor: colors.white },
   spinner: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
   mediaButtons: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8, padding: 12 },
-  section: { fontSize: 16, fontWeight: '800', color: colors.ink, marginBottom: 10 },
+  section: { fontSize: 16, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 10 },
   hint: { fontSize: 12, color: colors.muted, marginBottom: 8 },
   counter: { alignSelf: 'flex-end', fontSize: 11, color: colors.muted, marginTop: -6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

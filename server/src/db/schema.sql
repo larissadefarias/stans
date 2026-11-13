@@ -113,3 +113,13 @@ create table messages (
   created_at timestamptz not null default now()
 );
 create index on messages (room_id, id desc);
+
+create table community_ratings (
+  id bigserial primary key,
+  rater_id uuid not null references users on delete cascade,
+  community_id uuid not null references communities on delete cascade,
+  type text not null check (type in ('superfan','cool','hot','boring')),
+  created_at timestamptz not null default now()
+);
+create index on community_ratings (rater_id, community_id, created_at desc);
+create index on community_ratings (community_id);

@@ -26,24 +26,30 @@ function detectExt(b: Buffer): 'jpg' | 'png' | 'webp' | null {
 
 export const uploads = Router();
 
+const receive = (req: any, res: any, next: any) => upload.single('image')(req, res, (err) => {
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') return next(new HttpError(413, 'image_too_large'));
+  next(err);
+});
+
+async function save(file: Express.Multer.File | undefined, prefix: string) {
+  if (!file) throw new HttpError(400, 'image_required');
+  const ext = detectExt(file.buffer);
+  if (!ext) throw new HttpError(415, 'image_invalid_type');
+  const name = `${prefix}-${randomUUID()}.${ext}`;
+  await writeFile(path.join(UPLOAD_DIR, name), file.buffer);
+  return `/uploads/${name}`;
+}
+
+// Imagem de post: só sobe o arquivo e devolve a URL; o post é criado depois com { imageUrl }
+uploads.post('/uploads/image', auth, receive, async (req, res) => {
+  res.status(201).json({ url: await save(req.file, 'post') });
+});
+
 const COLUMNS = { avatar: 'avatar_url', cover: 'cover_url' } as const;
 
 for (const [kind, column] of Object.entries(COLUMNS)) {
-  uploads.post(`/me/${kind}`, auth, (req, res, next) => {
-    upload.single('image')(req, res, (err) => {
-      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') return next(new HttpError(413, 'image_too_large'));
-      if (err) return next(err);
-      next();
-    });
-  }, async (req, res) => {
-    const file = req.file;
-    if (!file) throw new HttpError(400, 'image_required');
-    const ext = detectExt(file.buffer);
-    if (!ext) throw new HttpError(415, 'image_invalid_type');
-
-    const name = `${kind}-${randomUUID()}.${ext}`;
-    await writeFile(path.join(UPLOAD_DIR, name), file.buffer);
-    const url = `/uploads/${name}`;
+  uploads.post(`/me/${kind}`, auth, receive, async (req, res) => {
+    const url = await save(req.file, kind);
 
     const [old] = await q<{ url: string | null }>(
       `update users u set ${column}=$2 from (select ${column} as url from users where id=$1) o where u.id=$1 returning o.url`,

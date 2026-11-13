@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { useAuth } from '../../auth';
 import { PostList } from '../../components/PostList';
 import { Button, Card, GradientHeader } from '../../components/ui';
-import { colors } from '../../theme';
+import { colors, font } from '../../theme';
 
 export default function Feed() {
   const { user } = useAuth();
@@ -34,8 +34,8 @@ export default function Feed() {
 }
 
 const s = StyleSheet.create({
-  hello: { fontSize: 22, fontWeight: '800', color: colors.white },
+  hello: { fontSize: 22, fontWeight: '800', fontFamily: font.title, color: colors.white },
   sub: { color: colors.white, opacity: 0.9, marginTop: 2 },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: 6 },
+  emptyTitle: { fontSize: 17, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 6 },
   emptyText: { color: colors.muted, marginBottom: 14, lineHeight: 20 },
 });

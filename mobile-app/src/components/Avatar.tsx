@@ -1,6 +1,6 @@
 import { Image, Text, View, type ViewStyle } from 'react-native';
 import { mediaUrl } from '../api';
-import { colors } from '../theme';
+import { colors, font } from '../theme';
 
 type Props = { url: string | null | undefined; name: string; size?: number; style?: ViewStyle };
 
@@ -13,7 +13,7 @@ export function Avatar({ url, name, size = 40, style }: Props) {
       {src ? (
         <Image source={{ uri: src }} style={box} accessibilityLabel={`Foto de ${name}`} />
       ) : (
-        <Text style={{ fontWeight: '800', color: colors.violet, fontSize: size * 0.42 }}>{name.slice(0, 1).toUpperCase()}</Text>
+        <Text style={{ fontWeight: '800', fontFamily: font.title, color: colors.violet, fontSize: size * 0.42 }}>{name.slice(0, 1).toUpperCase()}</Text>
       )}
     </View>
   );

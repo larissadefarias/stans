@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { pool, q } from './db.js';
 import { auth, sign, uidOf } from './auth.js';
 import { HttpError } from './util.js';
+import { assertNotBlocked, isBlockedEitherWay, notify } from './social-helpers.js';
 
 export const routes = Router();
 
@@ -76,6 +77,16 @@ routes.get('/users/:username', auth, async (req, res) => {
       from users where username=$1`, [req.params.username]);
   if (!u) throw new HttpError(404, 'user_not_found');
   if (u.id !== me) delete u.invisible; // só o próprio fã vê se está invisível
+  // Quem me bloqueou some para mim; quem eu bloqueei continua visível (para eu poder desbloquear)
+  const [bl] = await q<{ iBlocked: boolean; blockedMe: boolean }>(`select
+      exists(select 1 from blocks where blocker_id=$1 and blocked_id=$2) as "iBlocked",
+      exists(select 1 from blocks where blocker_id=$2 and blocked_id=$1) as "blockedMe"`, [me, u.id]);
+  if (bl.blockedMe) throw new HttpError(404, 'user_not_found');
+  const [f] = await q<{ followers: number; following: number; isFollowing: boolean; followsMe: boolean }>(`select
+      (select count(*)::int from follows where followee_id=$2) as followers,
+      (select count(*)::int from follows where follower_id=$2) as following,
+      exists(select 1 from follows where follower_id=$1 and followee_id=$2) as "isFollowing",
+      exists(select 1 from follows where follower_id=$2 and followee_id=$1) as "followsMe"`, [me, u.id]);
 
   const hidden = u.hide_ratings && u.id !== me;
   const rows = hidden ? [] : await q<{ type: string; total: number; week: number }>(
@@ -88,7 +99,7 @@ routes.get('/users/:username', auth, async (req, res) => {
      join communities c on c.id=m.community_id where m.user_id=$1 order by c.name`, [u.id]);
 
   res.json({
-    ...u, fandoms,
+    ...u, fandoms, ...f, iBlocked: bl.iBlocked,
     ratings: hidden ? null : Object.fromEntries(rows.map(r => [r.type, { total: r.total, week: r.week }])),
     canRateAt: last?.at ?? null,
   });
@@ -97,7 +108,9 @@ routes.get('/users/:username', auth, async (req, res) => {
 routes.post('/users/:username/follow', auth, async (req, res) => {
   const target = await userIdByName(req.params.username as string);
   if (target === uidOf(res)) throw new HttpError(400, 'cannot_follow_self');
-  await q('insert into follows values($1,$2) on conflict do nothing', [uidOf(res), target]);
+  await assertNotBlocked(uidOf(res), target);
+  const r = await q('insert into follows values($1,$2) on conflict do nothing returning 1', [uidOf(res), target]);
+  if (r.length) await notify(req, target, uidOf(res), 'follow');
   res.status(204).end();
 });
 routes.delete('/users/:username/follow', auth, async (req, res) => {
@@ -115,6 +128,7 @@ routes.post('/users/:username/ratings', auth, async (req, res) => {
     const t = (await c.query('select id from users where username=$1', [req.params.username])).rows[0];
     if (!t) throw new HttpError(404, 'user_not_found');
     if (t.id === me) throw new HttpError(400, 'cannot_rate_self');
+    if (await isBlockedEitherWay(me, t.id)) throw new HttpError(403, 'blocked');
     const old = await c.query(`select 1 from users where id=$1 and created_at < now() - interval '24 hours'`, [me]);
     if (!old.rowCount) throw new HttpError(403, 'account_too_new');
 
@@ -126,6 +140,7 @@ routes.post('/users/:username/ratings', auth, async (req, res) => {
 
     await c.query('insert into fan_ratings(rater_id, target_id, type) values($1,$2,$3)', [me, t.id, type]);
     await c.query('commit');
+    await notify(req, t.id, me, 'rating'); // o app mostra "alguém te avaliou", sem dizer quem
     res.status(201).end();
   } catch (e) {
     await c.query('rollback');
@@ -141,7 +156,9 @@ routes.get('/users/:username/wall', auth, async (req, res) => {
   res.json(await q(`select w.id, w.parent_id as "parentId", w.content, w.created_at as "createdAt",
       u.username as "authorUsername", u.avatar_url as "authorAvatar"
       from wall_posts w join users u on u.id=w.author_id
-      where w.profile_id=$1 and w.id < $2 order by w.id desc limit 30`, [await userIdByName(req.params.username as string), before]));
+      where w.profile_id=$1 and w.id < $2
+      and not exists(select 1 from blocks b where b.blocker_id=$3 and b.blocked_id=w.author_id)
+      order by w.id desc limit 30`, [await userIdByName(req.params.username as string), before, uidOf(res)]));
 });
 
 routes.post('/users/:username/wall', auth, async (req, res) => {
@@ -150,12 +167,14 @@ routes.post('/users/:username/wall', auth, async (req, res) => {
   const [p] = await q('select id, wall_policy from users where username=$1', [req.params.username]);
   if (!p) throw new HttpError(404, 'user_not_found');
   if (p.id === me) throw new HttpError(400, 'cannot_post_own_wall'); // mural é só para os outros fãs
+  await assertNotBlocked(me, p.id);
   if (p.wall_policy === 'following') {
     const ok = await q('select 1 from follows where follower_id=$1 and followee_id=$2', [p.id, me]);
     if (!ok.length) throw new HttpError(403, 'wall_restricted');
   }
   const [w] = await q('insert into wall_posts(profile_id, author_id, parent_id, content) values($1,$2,$3,$4) returning id',
     [p.id, me, b.parentId ?? null, b.content]);
+  await notify(req, p.id, me, 'wall');
   res.status(201).json(w);
 });
 
@@ -235,18 +254,20 @@ const cursorOf = (raw: unknown) => {
 routes.get('/feed', auth, async (req, res) => {
   const cur = cursorOf(req.query.cursor);
   res.json(await q(`${postSelect} where p.community_id in (select community_id from memberships where user_id=$1)
+    and not exists(select 1 from blocks b where b.blocker_id=$1 and b.blocked_id=p.author_id)
     and (p.created_at, p.id) < ($2::timestamptz, $3::uuid) order by p.created_at desc, p.id desc limit 20`, [uidOf(res), cur.at, cur.id]));
 });
 
 routes.get('/communities/:id/posts', auth, async (req, res) => {
   const cur = cursorOf(req.query.cursor);
-  res.json(await q(`${postSelect} where p.community_id=$4 and (p.created_at, p.id) < ($2::timestamptz, $3::uuid)
+  res.json(await q(`${postSelect} where p.community_id=$4 and not exists(select 1 from blocks b where b.blocker_id=$1 and b.blocked_id=p.author_id) and (p.created_at, p.id) < ($2::timestamptz, $3::uuid)
     order by p.created_at desc, p.id desc limit 20`, [uidOf(res), cur.at, cur.id, req.params.id]));
 });
 
 routes.post('/communities/:id/posts', auth, async (req, res) => {
   const b = z.object({
-    content: z.string().trim().min(1).max(2000), imageUrl: z.string().url().optional(),
+    content: z.string().trim().min(1).max(2000),
+    imageUrl: z.union([z.string().regex(/^\/uploads\/[\w.-]+$/), z.string().url()]).optional(), // vem de POST /uploads/image
     isSpoiler: z.boolean().default(false), tags: z.array(z.string().max(24)).max(5).default([]),
   }).parse(req.body);
   const member = await q('select 1 from memberships where user_id=$1 and community_id=$2', [uidOf(res), req.params.id]);
@@ -267,28 +288,42 @@ routes.delete('/posts/:id', auth, async (req, res) => {
 
 routes.post('/posts/:id/like', auth, async (req, res) => {
   const del = await q('delete from likes where post_id=$1 and user_id=$2 returning 1', [req.params.id, uidOf(res)]);
-  if (!del.length) await q('insert into likes values($1,$2)', [req.params.id, uidOf(res)]);
+  if (!del.length) {
+    await q('insert into likes values($1,$2)', [req.params.id, uidOf(res)]);
+    const [p] = await q<{ author_id: string }>('select author_id from posts where id=$1', [req.params.id]);
+    if (p) await notify(req, p.author_id, uidOf(res), 'like', req.params.id as string);
+  }
   res.json({ liked: !del.length });
 });
 
 routes.get('/posts/:id/comments', auth, async (req, res) => {
-  res.json(await q(`select k.id, k.content, k.created_at as "createdAt", u.username as "authorUsername"
-    from comments k join users u on u.id=k.author_id where k.post_id=$1 order by k.created_at limit 100`, [req.params.id]));
+  res.json(await q(`select k.id, k.content, k.created_at as "createdAt", u.username as "authorUsername", u.avatar_url as "authorAvatar"
+    from comments k join users u on u.id=k.author_id where k.post_id=$1
+    and not exists(select 1 from blocks b where b.blocker_id=$2 and b.blocked_id=k.author_id)
+    order by k.created_at limit 100`, [req.params.id, uidOf(res)]));
 });
 
 routes.post('/posts/:id/comments', auth, async (req, res) => {
   const { content } = z.object({ content: z.string().trim().min(1).max(500) }).parse(req.body);
+  const [p] = await q<{ author_id: string }>('select author_id from posts where id=$1', [req.params.id]);
+  if (!p) throw new HttpError(404, 'not_found');
+  await assertNotBlocked(uidOf(res), p.author_id);
   const [k] = await q('insert into comments(post_id, author_id, content) values($1,$2,$3) returning id', [req.params.id, uidOf(res), content]);
+  await notify(req, p.author_id, uidOf(res), 'comment', req.params.id as string);
   res.status(201).json(k);
 });
 
 /* ───────── Chat (HTTP: lista, histórico, leitura, dm) ───────── */
 routes.get('/rooms', auth, async (req, res) => {
-  res.json(await q(`select r.id, r.kind, c.name as "communityName",
-      (select u.username from room_members o join users u on u.id=o.user_id where o.room_id=r.id and o.user_id<>$1 and r.kind='dm' limit 1) as peer,
+  res.json(await q(`select r.id, r.kind, c.name as "communityName", c.id as "communityId",
+      peer.username as peer, peer.avatar_url as "peerAvatar",
+      lm.content as "lastMessage", lm.created_at as "lastAt",
       (select count(*)::int from messages m where m.room_id=r.id and m.id > rm.last_read_id and m.sender_id<>$1) as unread
       from room_members rm join rooms r on r.id=rm.room_id left join communities c on c.id=r.community_id
-      where rm.user_id=$1 order by r.created_at desc`, [uidOf(res)]));
+      left join lateral (select u.username, u.avatar_url from room_members o join users u on u.id=o.user_id
+        where o.room_id=r.id and o.user_id<>$1 and r.kind='dm' limit 1) peer on true
+      left join lateral (select m.content, m.created_at from messages m where m.room_id=r.id order by m.id desc limit 1) lm on true
+      where rm.user_id=$1 order by coalesce(lm.created_at, r.created_at) desc`, [uidOf(res)]));
 });
 
 const assertMember = async (roomId: string, uid: string) => {
@@ -313,6 +348,7 @@ routes.post('/dm/:username', auth, async (req, res) => {
   const me = uidOf(res);
   const other = await userIdByName(req.params.username as string);
   if (other === me) throw new HttpError(400, 'cannot_dm_self');
+  await assertNotBlocked(me, other);
   const [found] = await q<{ id: string }>(`select r.id from rooms r
     join room_members a on a.room_id=r.id and a.user_id=$1 join room_members b on b.room_id=r.id and b.user_id=$2
     where r.kind='dm' limit 1`, [me, other]);
