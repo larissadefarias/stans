@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { pool, q } from './db.js';
 import { auth, sign, uidOf } from './auth.js';
 import { HttpError } from './util.js';
-import { assertNotBlocked, isBlockedEitherWay, notify } from './social-helpers.js';
+import { assertNotBlocked, extractTags, isBlockedEitherWay, notify, TagParam } from './social-helpers.js';
 
 export const routes = Router();
 
@@ -264,6 +264,16 @@ routes.get('/communities/:id/posts', auth, async (req, res) => {
     order by p.created_at desc, p.id desc limit 20`, [uidOf(res), cur.at, cur.id, req.params.id]));
 });
 
+// Posts com uma hashtag, de todas as comunidades. Também acha posts antigos pela #tag escrita no texto.
+routes.get('/tags/:tag/posts', auth, async (req, res) => {
+  const tag = TagParam.parse(req.params.tag).toLowerCase();
+  const cur = cursorOf(req.query.cursor);
+  res.json(await q(`${postSelect} where ($4 = any(p.tags) or p.content ~* ('#' || $4 || '([^[:alnum:]_]|$)'))
+    and not exists(select 1 from blocks b where b.blocker_id=$1 and b.blocked_id=p.author_id)
+    and (p.created_at, p.id) < ($2::timestamptz, $3::uuid) order by p.created_at desc, p.id desc limit 20`,
+    [uidOf(res), cur.at, cur.id, tag]));
+});
+
 routes.post('/communities/:id/posts', auth, async (req, res) => {
   const b = z.object({
     content: z.string().trim().min(1).max(2000),
@@ -272,8 +282,9 @@ routes.post('/communities/:id/posts', auth, async (req, res) => {
   }).parse(req.body);
   const member = await q('select 1 from memberships where user_id=$1 and community_id=$2', [uidOf(res), req.params.id]);
   if (!member.length) throw new HttpError(403, 'not_a_member');
+  const tags = [...new Set([...b.tags.map(t => t.toLowerCase()), ...extractTags(b.content)])].slice(0, 10);
   const [p] = await q('insert into posts(community_id, author_id, content, image_url, is_spoiler, tags) values($1,$2,$3,$4,$5,$6) returning id',
-    [req.params.id, uidOf(res), b.content, b.imageUrl ?? null, b.isSpoiler, b.tags]);
+    [req.params.id, uidOf(res), b.content, b.imageUrl ?? null, b.isSpoiler, tags]);
   res.status(201).json(p);
 });
 

@@ -37,6 +37,7 @@ export default function RootLayout() {
           <Stack.Screen name="chat/[roomId]" options={{ title: 'Chat', ...back }} />
           <Stack.Screen name="notifications" options={{ title: 'Notificações', ...back }} />
           <Stack.Screen name="new-community" options={{ title: 'Nova comunidade', ...back }} />
+          <Stack.Screen name="tag/[tag]" options={{ title: 'Hashtag', ...back }} />
           <Stack.Screen name="settings" options={{ title: 'Editar perfil', ...back }} />
         </Stack>
       </RealtimeProvider>

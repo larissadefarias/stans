@@ -119,6 +119,7 @@ export type WallPost = {
   authorUsername: string; authorAvatar: string | null;
 };
 
+export type TagCount = { tag: string; posts: number };
 export type Post = {
   id: string; communityId: string; communityName: string; content: string; imageUrl: string | null;
   isSpoiler: boolean; tags: string[]; createdAt: string; authorUsername: string; authorAvatar: string | null;
@@ -157,7 +158,10 @@ export const api = {
     request<{ id: string; roomId: string }>('POST', '/communities', c),
   communityRoom: (id: string) => request<{ roomId: string }>('POST', `/communities/${id}/room`),
   search: (term: string) =>
-    request<{ users: UserSummary[]; communities: Community[] }>('GET', `/search?q=${encodeURIComponent(term)}`),
+    request<{ users: UserSummary[]; communities: Community[]; tags: TagCount[] }>('GET', `/search?q=${encodeURIComponent(term)}`),
+  tagPosts: (tag: string, cursor?: string) =>
+    request<Post[]>('GET', `/tags/${encodeURIComponent(tag)}/posts${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+  trendingTags: () => request<TagCount[]>('GET', '/tags/trending'),
   deletePost: (id: string) => request<void>('DELETE', `/posts/${id}`),
   like: (postId: string) => request<{ liked: boolean }>('POST', `/posts/${postId}/like`),
 

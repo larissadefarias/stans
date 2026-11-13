@@ -4,6 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { api, mediaUrl, type Post } from '../api';
 import { colors, radius, font } from '../theme';
 import { Avatar } from './Avatar';
+import { openTag, RichText } from './RichText';
 import { OptionsSheet, ReportSheet, type Option } from './Sheet';
 import { Card } from './ui';
 
@@ -25,6 +26,8 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
   const [menu, setMenu] = useState(false);
   const [reporting, setReporting] = useState(false);
   const image = mediaUrl(post.imageUrl);
+  const lower = post.content.toLowerCase();
+  const extraTags = post.tags.filter((t) => !lower.includes(`#${t}`));
 
 
   const toggleLike = async () => {
@@ -77,7 +80,7 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
 
       {revealed ? (
         <>
-          <Text style={s.content}>{post.content}</Text>
+          <RichText style={s.content}>{post.content}</RichText>
           {image && <Image source={{ uri: image }} style={s.image} resizeMode="cover" accessibilityLabel="Imagem do post" />}
         </>
       ) : (
@@ -87,8 +90,8 @@ export function PostCard({ post, showCommunity = true, canDelete, onDeleted, hid
         </Pressable>
       )}
 
-      {post.tags.length > 0 && (
-        <View style={s.tags}>{post.tags.map((t) => <Text key={t} style={s.tag}>#{t}</Text>)}</View>
+      {extraTags.length > 0 && (
+        <View style={s.tags}>{extraTags.map((t) => <Text key={t} style={s.tag} onPress={() => openTag(t)} accessibilityRole="link">#{t}</Text>)}</View>
       )}
 
       <View style={s.actions}>
