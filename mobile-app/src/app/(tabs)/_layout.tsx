@@ -1,9 +1,9 @@
 import { Redirect, router, Tabs } from 'expo-router';
-import { Image, Pressable, View, type ColorValue, type ImageSourcePropType } from 'react-native';
+import { Image, Pressable, Text, View, type ColorValue, type ImageSourcePropType } from 'react-native';
 import { useAuth } from '../../auth';
 import { Badge, BellIcon } from '../../components/Badge';
 import { useRealtime } from '../../realtime';
-import { colors, font } from '../../theme';
+import { colors, font, isDark, setThemePref } from '../../theme';
 
 const icon = (src: ImageSourcePropType, badge = 0) => ({ color, size }: { color: ColorValue; size: number }) => (
   <View>
@@ -25,6 +25,13 @@ export default function TabsLayout() {
     </Pressable>
   );
 
+  const themeToggle = () => (
+    <Pressable onPress={() => setThemePref(isDark ? 'light' : 'dark')} hitSlop={10} style={{ marginRight: 18 }}
+      accessibilityRole="button" accessibilityLabel={isDark ? 'Usar modo claro' : 'Usar modo escuro'}>
+      <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
+    </Pressable>
+  );
+
   return (
     <Tabs
       screenOptions={{
@@ -41,7 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="feed" options={{ title: 'Início', headerRight: bell, tabBarIcon: icon(require('../../../assets/home.png')) }} />
       <Tabs.Screen name="communities" options={{ title: 'Comunidades', tabBarIcon: icon(require('../../../assets/comunidade.png')) }} />
       <Tabs.Screen name="messages" options={{ title: 'Mensagens', tabBarIcon: icon(require('../../../assets/mensagem.png'), unreadMessages) }} />
-      <Tabs.Screen name="me" options={{ title: 'Perfil', headerRight: undefined, tabBarIcon: icon(require('../../../assets/perfil.png')) }} />
+      <Tabs.Screen name="me" options={{ title: 'Perfil', headerRight: themeToggle, tabBarIcon: icon(require('../../../assets/perfil.png')) }} />
     </Tabs>
   );
 }

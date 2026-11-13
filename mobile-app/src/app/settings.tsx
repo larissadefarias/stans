@@ -7,7 +7,7 @@ import { useAuth } from '../auth';
 import { Avatar } from '../components/Avatar';
 import { Button, Card, ErrorText, Field } from '../components/ui';
 import { UserRow } from '../components/UserRow';
-import { colors, radius, font } from '../theme';
+import { colors, radius, font, setThemePref, themePref } from '../theme';
 
 type WallPolicy = 'everyone' | 'following';
 
@@ -136,6 +136,20 @@ export default function Settings() {
               accessibilityState={{ selected: wallPolicy === value }}
               style={[s.chip, wallPolicy === value && s.chipActive]}>
               <Text style={[s.chipText, wallPolicy === value && { color: colors.white }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card>
+        <Text style={s.section}>Aparência</Text>
+        <Text style={s.hint}>Muda na hora (o app recarrega).</Text>
+        <View style={s.chips}>
+          {([['auto', '📱 Automático'], ['light', '☀️ Claro'], ['dark', '🌙 Escuro']] as const).map(([value, label]) => (
+            <Pressable key={value} onPress={() => value !== themePref && setThemePref(value)} accessibilityRole="radio"
+              accessibilityState={{ selected: themePref === value }}
+              style={[s.chip, themePref === value && s.chipActive]}>
+              <Text style={[s.chipText, themePref === value && { color: colors.white }]}>{label}</Text>
             </Pressable>
           ))}
         </View>

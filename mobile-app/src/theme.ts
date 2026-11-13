@@ -1,7 +1,33 @@
-import { Appearance } from 'react-native';
+import { reloadAppAsync } from 'expo';
+import * as SecureStore from 'expo-secure-store';
+import { Appearance, Platform } from 'react-native';
 
 // Identidade do Stans: lilás + azul bebê/ciano, cards arredondados, clima de "Orkut moderno".
-// O tema segue o modo claro/escuro do aparelho (lido quando o app abre).
+// Tema: "auto" segue o aparelho; o fã pode fixar claro ou escuro em Editar perfil.
+// As cores são lidas quando o app abre, por isso trocar o tema recarrega o app.
+
+export type ThemePref = 'auto' | 'light' | 'dark';
+const THEME_KEY = 'stans_theme';
+
+function readPref(): ThemePref {
+  try {
+    const v = Platform.OS === 'web' ? globalThis.localStorage?.getItem(THEME_KEY) : SecureStore.getItem(THEME_KEY);
+    return v === 'light' || v === 'dark' ? v : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+export const themePref = readPref();
+
+export async function setThemePref(pref: ThemePref) {
+  try {
+    if (Platform.OS === 'web') globalThis.localStorage?.setItem(THEME_KEY, pref);
+    else SecureStore.setItem(THEME_KEY, pref);
+  } catch { /* sem armazenamento: volta ao automático */ }
+  if (Platform.OS === 'web') globalThis.location?.reload();
+  else await reloadAppAsync();
+}
 
 const light = {
   violet: '#7C3AED',   // botões e links (texto branco tem bom contraste aqui)
@@ -31,7 +57,7 @@ const dark: typeof light = {
   spoiler: '#0B0920',
 };
 
-export const isDark = Appearance.getColorScheme() === 'dark';
+export const isDark = themePref === 'auto' ? Appearance.getColorScheme() === 'dark' : themePref === 'dark';
 export const colors = isDark ? dark : light;
 
 export const gradient = [colors.lilac, colors.cyan] as const; // use com expo-linear-gradient
