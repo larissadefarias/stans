@@ -31,7 +31,22 @@ social.get('/search', auth, async (req, res) => {
        (select count(*)::int from memberships m where m.community_id=c.id) as members
        from communities c where c.name ilike $1 or c.description ilike $1 order by members desc limit 20`, [like]),
   ]);
-  res.json({ users, communities });
+  // Hashtags que começam com o termo (sem o #), mais usadas primeiro
+  const tagTerm = term.replace(/^#/, '').toLowerCase();
+  const tags = /^[\p{L}\p{N}_]{1,30}$/u.test(tagTerm) ? await q<{ tag: string; posts: number }>(
+    `select lower(m[1]) as tag, count(distinct p.id)::int as posts
+     from posts p, regexp_matches(p.content, '#([[:alnum:]_]{1,30})', 'g') m
+     where p.content ilike $1 and lower(m[1]) like $2
+     group by 1 order by 2 desc, 1 limit 10`, [`%#${tagTerm}%`, `${tagTerm}%`]) : [];
+  res.json({ users, communities, tags });
+});
+
+/* Hashtags em alta: as mais usadas nos últimos 7 dias */
+social.get('/tags/trending', auth, async (_req, res) => {
+  res.json(await q(`select lower(m[1]) as tag, count(distinct p.id)::int as posts
+    from posts p, regexp_matches(p.content, '#([[:alnum:]_]{1,30})', 'g') m
+    where p.created_at > now() - interval '7 days'
+    group by 1 order by 2 desc, 1 limit 12`));
 });
 
 /* ───────── Comunidade: detalhes e sala do chat ───────── */

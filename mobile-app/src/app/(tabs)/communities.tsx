@@ -1,7 +1,8 @@
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { api, errorMessage, type Category, type Community, type UserSummary } from '../../api';
+import { api, errorMessage, type Category, type Community, type TagCount, type UserSummary } from '../../api';
+import { openTag } from '../../components/RichText';
 import { useAuth } from '../../auth';
 import { CATEGORIES as ALL, categoryLabel as labelOf } from '../../categories';
 import { Card, ErrorText } from '../../components/ui';
@@ -18,7 +19,8 @@ export default function Communities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [term, setTerm] = useState('');
-  const [results, setResults] = useState<{ users: UserSummary[]; communities: Community[] } | null>(null);
+  const [results, setResults] = useState<{ users: UserSummary[]; communities: Community[]; tags: TagCount[] } | null>(null);
+  const [trending, setTrending] = useState<TagCount[]>([]);
   const navigation = useNavigation();
 
   useLayoutEffect(() => {
@@ -50,6 +52,7 @@ export default function Communities() {
       const [list, me] = await Promise.all([api.communities(category ?? undefined), api.profile(user.username)]);
       setItems(list);
       setMine(new Set(me.fandoms.map((f) => f.id)));
+      api.trendingTags().then(setTrending).catch(() => setTrending([]));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -82,7 +85,7 @@ export default function Communities() {
     <View style={{ flex: 1 }}>
       <View style={s.searchBox}>
         <Image source={require('../../../assets/search.png')} style={s.searchIcon} />
-        <TextInput value={term} onChangeText={setTerm} placeholder="Buscar fãs e comunidades" placeholderTextColor={colors.muted}
+        <TextInput value={term} onChangeText={setTerm} placeholder="Buscar fãs, comunidades e #tags" placeholderTextColor={colors.muted}
           style={s.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Buscar" />
         {!!term && (
           <Pressable onPress={() => setTerm('')} hitSlop={10} accessibilityLabel="Limpar busca">
@@ -93,6 +96,18 @@ export default function Communities() {
 
       {results ? (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
+          {(results.tags.length > 0 || term.trim().startsWith('#')) && (
+            <Card>
+              <Text style={s.section}>Hashtags</Text>
+              {results.tags.length === 0 ? <Text style={s.emptySmall}>Nenhum post com essa hashtag ainda.</Text>
+                : results.tags.map((t) => (
+                  <Pressable key={t.tag} style={{ paddingVertical: 8 }} onPress={() => openTag(t.tag)} accessibilityRole="link">
+                    <Text style={[s.name, { color: colors.violet }]}>#{t.tag}</Text>
+                    <Text style={s.meta}>{t.posts} {t.posts === 1 ? 'post' : 'posts'}</Text>
+                  </Pressable>
+                ))}
+            </Card>
+          )}
           <Card>
             <Text style={s.section}>Fãs</Text>
             {results.users.length === 0 ? <Text style={s.emptySmall}>Nenhum fã encontrado.</Text>
@@ -111,6 +126,18 @@ export default function Communities() {
           </Card>
         </ScrollView>
       ) : (<>
+      {trending.length > 0 && (
+        <View>
+          <Text style={s.trendTitle}>🔥 Em alta</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
+            {trending.map((t) => (
+              <Pressable key={t.tag} onPress={() => openTag(t.tag)} accessibilityRole="link" style={s.chip}>
+                <Text style={[s.chipText, { color: colors.violet }]}>#{t.tag}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
           {CATEGORIES.map((c) => {
@@ -159,6 +186,7 @@ export default function Communities() {
 }
 
 const s = StyleSheet.create({
+  trendTitle: { marginLeft: 16, marginTop: 4, fontWeight: '800', fontFamily: font.title, color: colors.ink },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, paddingHorizontal: 14,
     backgroundColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.babyBlue,

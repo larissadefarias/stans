@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { z } from 'zod';
 import type { Server } from 'socket.io';
 import { q } from './db.js';
 import { HttpError } from './util.js';
@@ -28,3 +29,11 @@ export async function notify(req: Request, userId: string, actorId: string, type
   await q('insert into notifications(user_id, actor_id, type, post_id) values($1,$2,$3,$4)', [userId, actorId, type, postId]);
   (req.app.get('io') as Server).to(`user:${userId}`).emit('notification:new', { type });
 }
+
+/* ───────── Hashtags ───────── */
+// Letras (com acento), números e _; até 30 caracteres. Ex.: "Amei o show #BTS #kpop_2026" -> ['bts', 'kpop_2026']
+const TAG_RE = /#([\p{L}\p{N}_]{1,30})/gu;
+export const extractTags = (text: string) =>
+  [...new Set([...text.matchAll(TAG_RE)].map(m => m[1].toLowerCase()))].slice(0, 10);
+// Tag recebida na URL: só os mesmos caracteres (vai dentro de uma regex no SQL, então nada de símbolos)
+export const TagParam = z.string().regex(/^[\p{L}\p{N}_]{1,30}$/u);
