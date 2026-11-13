@@ -25,7 +25,7 @@ export function BellIcon({ color = colors.violet, size = 24 }: { color?: string;
 const s = StyleSheet.create({
   badge: {
     position: 'absolute', top: -6, right: -10, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
-    backgroundColor: colors.pink, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white,
+    backgroundColor: colors.pink, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.surface,
   },
   text: { color: colors.white, fontSize: 10, fontWeight: '800', fontFamily: font.title },
 });

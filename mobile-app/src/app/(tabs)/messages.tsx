@@ -71,7 +71,7 @@ export default function Messages() {
 }
 
 const s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.white, marginBottom: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, marginBottom: 8 },
   groupIcon: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.babyBlue, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontWeight: '800', fontFamily: font.title, color: colors.ink, fontSize: 15 },
   time: { color: colors.muted, fontSize: 12, marginLeft: 8 },

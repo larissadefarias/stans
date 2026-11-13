@@ -113,3 +113,12 @@ create table messages (
   created_at timestamptz not null default now()
 );
 create index on messages (room_id, id desc);
+
+create table post_ratings (
+  post_id uuid not null references posts on delete cascade,
+  user_id uuid not null references users on delete cascade,
+  type text not null check (type in ('superfan','cool','hot','boring')),
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+create index on post_ratings (post_id, type);

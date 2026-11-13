@@ -323,7 +323,7 @@ const s = StyleSheet.create({
   counts: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 8 },
   countText: { color: colors.white, opacity: 0.95 },
   countNum: { fontWeight: '800', fontFamily: font.title },
-  statusPill: { alignSelf: 'center', marginTop: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 6 },
+  statusPill: { alignSelf: 'center', marginTop: 10, backgroundColor: colors.surface, opacity: 0.95, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 6 },
   statusText: { color: colors.ink, fontWeight: '600' },
   bio: { textAlign: 'center', color: colors.white, marginTop: 10 },
   actions: { flexDirection: 'row', gap: 10 },

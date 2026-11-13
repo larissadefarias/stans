@@ -30,10 +30,11 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.violet,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.babyBlue, height: 64, paddingTop: 6, paddingBottom: 8 },
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.babyBlue, height: 64, paddingTop: 6, paddingBottom: 8 },
         tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
         headerTintColor: colors.violet,
         headerTitleStyle: { fontWeight: '800', fontFamily: font.title, color: colors.ink },
+        headerStyle: { backgroundColor: colors.surface },
         sceneStyle: { backgroundColor: colors.skyBg },
       }}
     >

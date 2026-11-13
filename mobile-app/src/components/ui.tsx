@@ -57,7 +57,7 @@ export function ErrorText({ children }: { children: string | null }) {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: colors.white, borderRadius: radius.card, padding: 16,
+    backgroundColor: colors.surface, borderRadius: radius.card, padding: 16,
     borderWidth: 1, borderColor: colors.babyBlue,
     shadowColor: colors.violet, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
@@ -71,5 +71,5 @@ const s = StyleSheet.create({
     backgroundColor: colors.skyBg, borderRadius: 12, borderWidth: 1, borderColor: colors.babyBlue,
     paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: colors.ink,
   },
-  error: { color: '#B91C1C', marginVertical: 8, fontSize: 13 },
+  error: { color: colors.danger, marginVertical: 8, fontSize: 13 },
 });

@@ -161,14 +161,14 @@ export default function Communities() {
 const s = StyleSheet.create({
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, paddingHorizontal: 14,
-    backgroundColor: colors.white, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.babyBlue,
+    backgroundColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.babyBlue,
   },
   searchIcon: { width: 18, height: 18, tintColor: colors.muted },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 15, color: colors.ink },
   section: { fontSize: 16, fontWeight: '800', fontFamily: font.title, color: colors.ink, marginBottom: 4 },
   emptySmall: { color: colors.muted, paddingVertical: 6 },
   chips: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.babyBlue },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.babyBlue },
   chipActive: { backgroundColor: colors.violet, borderColor: colors.violet },
   chipText: { fontWeight: '700', color: colors.ink },
   cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -176,7 +176,7 @@ const s = StyleSheet.create({
   meta: { fontSize: 12, color: colors.muted, marginTop: 2 },
   desc: { marginTop: 8, color: colors.ink, lineHeight: 20 },
   join: { backgroundColor: colors.violet, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  joined: { backgroundColor: colors.white, borderWidth: 2, borderColor: colors.violet },
+  joined: { backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.violet },
   joinText: { color: colors.white, fontWeight: '800', fontFamily: font.title, fontSize: 13 },
   empty: { textAlign: 'center', color: colors.muted, marginTop: 40 },
 });

@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../auth';
 import { RealtimeProvider } from '../realtime';
-import { colors, font } from '../theme';
+import { colors, font, isDark } from '../theme';
 
 const back = { headerBackTitle: 'Voltar' };
 
@@ -16,11 +16,12 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <RealtimeProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? "light" : "dark"} />
         <Stack
           screenOptions={{
             headerTintColor: colors.violet,
             headerTitleStyle: { fontWeight: '800', fontFamily: font.title, color: colors.ink },
+            headerStyle: { backgroundColor: colors.surface },
             contentStyle: { backgroundColor: colors.skyBg },
           }}
         >

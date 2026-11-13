@@ -40,7 +40,7 @@ export function RatingButtons({ counts, canRateAt, onRate, isOwnProfile }: Props
 
 const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8 },
-  btn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.card, borderWidth: 2, backgroundColor: colors.white },
+  btn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.card, borderWidth: 2, backgroundColor: colors.surface },
   off: { opacity: 0.45 },
   pressed: { transform: [{ scale: 0.96 }] },
   icon: { width: 28, height: 28, resizeMode: 'contain' },

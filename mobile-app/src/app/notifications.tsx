@@ -84,7 +84,7 @@ export default function Notifications() {
 
 const s = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, marginBottom: 6 },
-  unread: { backgroundColor: colors.white },
+  unread: { backgroundColor: colors.surface },
   anon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.babyBlue, alignItems: 'center', justifyContent: 'center' },
   text: { color: colors.ink, lineHeight: 20 },
   who: { fontWeight: '800', fontFamily: font.title },

@@ -15,7 +15,7 @@ export function OptionsSheet({ visible, options, onClose }: { visible: boolean; 
         {options.map((o) => (
           <Pressable key={o.label} accessibilityRole="button" style={({ pressed }) => [s.option, pressed && { backgroundColor: colors.skyBg }]}
             onPress={() => { onClose(); o.onPress(); }}>
-            <Text style={[s.optionText, o.destructive && { color: '#DC2626' }]}>{o.label}</Text>
+            <Text style={[s.optionText, o.destructive && { color: colors.danger }]}>{o.label}</Text>
           </Pressable>
         ))}
         <Pressable accessibilityRole="button" style={s.option} onPress={onClose}>
@@ -88,7 +88,7 @@ export function ReportSheet({ target, onClose }: { target: { type: ReportTarget;
 const s = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(20,17,43,0.45)' },
   sheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.white,
+    position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.surface,
     borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingVertical: 8, paddingBottom: 24,
   },
   option: { paddingVertical: 16, paddingHorizontal: 24 },
