@@ -2,6 +2,7 @@ import { Router, type Request } from 'express';
 import type { Server } from 'socket.io';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import { isOurImage } from './storage.js';
 import { z } from 'zod';
 import { pool, q } from './db.js';
 import { auth, sign, uidOf } from './auth.js';
@@ -288,7 +289,7 @@ routes.get('/tags/:tag/posts', auth, async (req, res) => {
 routes.post('/communities/:id/posts', auth, async (req, res) => {
   const b = z.object({
     content: z.string().trim().min(1).max(2000),
-    imageUrl: z.union([z.string().regex(/^\/uploads\/[\w.-]+$/), z.string().url()]).optional(), // vem de POST /uploads/image
+    imageUrl: z.string().refine(isOurImage, 'image_not_uploaded').optional(), // vem de POST /uploads/image
     isSpoiler: z.boolean().default(false), tags: z.array(z.string().max(24)).max(5).default([]),
   }).parse(req.body);
   assertClean(b.content, ...b.tags);

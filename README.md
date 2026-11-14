@@ -59,6 +59,7 @@ App mobile (iOS, Android e navegador) feito com **React Native + Expo**, com API
 | App | TypeScript, React Native 0.88, Expo SDK 58, Expo Router, react-native-web, Socket.IO client |
 | API | TypeScript, Node.js, Express 5, Socket.IO, Zod, JWT, bcrypt, Multer |
 | Banco | PostgreSQL (Neon na nuvem ou Docker local), migrações em SQL |
+| Hospedagem | Render (API), Netlify (app web), Supabase Storage (fotos) |
 | Testes | `node:test` com tsx |
 
 ---
@@ -82,6 +83,7 @@ stans/
 │       ├── safety.ts      Idade, filtro de palavrões, regras de mensagem, moderação
 │       ├── socket.ts      Chat em tempo real
 │       ├── uploads.ts     Fotos de perfil, capa e posts
+│       ├── storage.ts     Onde as fotos ficam: disco ou Supabase Storage
 │       └── db/            schema.sql e migrations/
 └── docker-compose.yml     Postgres local
 ```
@@ -113,6 +115,10 @@ npx expo start --web          # abre em http://localhost:8081
 
 No celular, instale o **Expo Go** e leia o QR code (celular e computador na mesma rede Wi-Fi). O app encontra a API sozinho pelo IP do computador; se precisar, defina `EXPO_PUBLIC_API_URL` em `mobile-app/.env.local`.
 
+### Colocar no ar
+
+Dá para publicar de graça com Neon (banco), Supabase Storage (fotos), Render (API) e Netlify (app web). O passo a passo está em **[DEPLOY.md](DEPLOY.md)**.
+
 ### Testes
 
 ```bash
@@ -123,7 +129,6 @@ npm test
 ---
 
 ## Próximos passos
-- Publicar a API e guardar as fotos num serviço de armazenamento (hoje ficam em `server/uploads`)
 - Recuperação de senha por e-mail (hoje o link aparece no terminal do servidor)
 - Notificações push no celular
 - Encerrar outras sessões ao trocar a senha

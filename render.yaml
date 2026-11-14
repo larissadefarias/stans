@@ -1,0 +1,31 @@
+# API do Stans no Render (plano grátis). Passo a passo em DEPLOY.md.
+# No Render: New > Blueprint > escolha este repositório. Ele pede os valores marcados com sync: false.
+services:
+  - type: web
+    name: stans-api
+    runtime: node
+    plan: free
+    rootDir: server
+    # As migrações rodam no build (o plano grátis não tem "pre-deploy command")
+    buildCommand: npm ci --include=dev && npm run build && npm run migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL # connection string do Neon
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL # https://<projeto>.supabase.co
+        sync: false
+      - key: SUPABASE_SERVICE_KEY # chave secreta do Supabase (nunca vai para o app)
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: stans
+      - key: CORS_ORIGIN # endereço do app no Netlify, ex.: https://stans-app.netlify.app
+        sync: false
+      - key: APP_URL # o mesmo endereço do app (usado no link de trocar senha)
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"

@@ -4,3 +4,4 @@ node_modules
 !.env.example
 .neon
 server/uploads
+server/dist
