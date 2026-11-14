@@ -4,6 +4,9 @@
 
 App mobile (iOS, Android e navegador) feito com **React Native + Expo**, com API em **Node.js + Express + Socket.IO** e banco **PostgreSQL**.
 
+**👉 Teste no navegador: [stans-app.netlify.app](https://stans-app.netlify.app)**  
+<sub>A API fica no plano grátis do Render e dorme quando ninguém usa: o primeiro acesso pode levar uns 50 segundos.</sub>
+
 <p align="center">
   <img src="docs/screenshots/feed.jpg" alt="Início: feed com os posts das comunidades que você segue" width="200">
   <img src="docs/screenshots/communities.jpg" alt="Comunidades: busca, hashtags em alta e categorias" width="200">
