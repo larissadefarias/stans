@@ -1,14 +1,17 @@
 import type { Server } from 'socket.io';
 import { q } from './db.js';
 import { verify } from './auth.js';
+import { canSendInRoom, hasOffensive } from './safety.js';
 
 // userId -> sockets abertos. Com mais de uma instância do servidor, isto vai para o Redis.
 const online = new Map<string, Set<string>>();
 
 export function attachSocket(io: Server) {
-  io.use((s, next) => {
+  io.use(async (s, next) => {
     const uid = verify(String(s.handshake.auth?.token ?? ''));
     if (!uid) return next(new Error('unauthorized'));
+    const [u] = await q<{ banned: boolean }>('select banned_at is not null as banned from users where id=$1', [uid]);
+    if (!u || u.banned) return next(new Error('unauthorized'));
     s.data.uid = uid;
     next();
   });
@@ -38,6 +41,8 @@ export function attachSocket(io: Server) {
       if (!content || content.length > 2000 || !s.rooms.has(p.roomId)) return ack?.({ ok: false, error: 'invalid' });
       if (tokens <= 0) return ack?.({ ok: false, error: 'rate_limited' });
       tokens--;
+      if (hasOffensive(content)) return ack?.({ ok: false, error: 'offensive_content' });
+      if (!(await canSendInRoom(p.roomId, uid))) return ack?.({ ok: false, error: 'dm_requires_mutual_follow' });
       const [m] = await q(`with ins as (insert into messages(room_id, sender_id, content) values($1,$2,$3) returning *)
         select ins.id, ins.room_id as "roomId", ins.content, ins.created_at as "createdAt", u.username as "senderUsername"
         from ins join users u on u.id=ins.sender_id`, [p.roomId, uid, content]);

@@ -8,6 +8,7 @@ import { pool, q } from './db.js';
 import { auth, uidOf } from './auth.js';
 import { HttpError } from './util.js';
 import { assertNotBlocked, notify } from './social-helpers.js';
+import { isMinor } from './safety.js';
 
 export const social = Router();
 const io = (req: Request) => req.app.get('io') as Server;
@@ -24,9 +25,10 @@ social.get('/search', auth, async (req, res) => {
   const me = uidOf(res);
   const [users, communities] = await Promise.all([
     q(`select username, display_name as "displayName", avatar_url as "avatarUrl" from users u
-       where (username ilike $1 or display_name ilike $1)
+       where (username ilike $1 or display_name ilike $1) and u.banned_at is null
+       and ($4::boolean or u.birth_date is null or u.birth_date <= current_date - interval '18 years')
        and not exists(select 1 from blocks b where (b.blocker_id=$2 and b.blocked_id=u.id) or (b.blocker_id=u.id and b.blocked_id=$2))
-       order by (username ilike $3) desc, username limit 20`, [like, me, `${term}%`]),
+       order by (username ilike $3) desc, username limit 20`, [like, me, `${term}%`, await isMinor(me)]),
     q(`select c.id, c.name, c.category, c.description,
        (select count(*)::int from memberships m where m.community_id=c.id) as members
        from communities c where c.name ilike $1 or c.description ilike $1 order by members desc limit 20`, [like]),

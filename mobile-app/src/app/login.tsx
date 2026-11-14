@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { API_URL, errorMessage } from '../api';
 import { useAuth } from '../auth';
+import { maskDate, toIsoDate } from '../birthdate';
 import { Button, Card, ErrorText, Field } from '../components/ui';
 import { colors, gradient, font } from '../theme';
 
@@ -13,6 +14,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [birth, setBirth] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const isRegister = mode === 'register';
@@ -21,7 +23,11 @@ export default function Login() {
     setError(null);
     setLoading(true);
     try {
-      if (isRegister) await register(username.trim().toLowerCase(), email.trim(), password);
+      if (isRegister) {
+        const iso = toIsoDate(birth);
+        if (!iso) { setError('Informe sua data de nascimento no formato DD/MM/AAAA.'); return; }
+        await register(username.trim().toLowerCase(), email.trim(), password, iso);
+      }
       else await login(email.trim(), password);
       router.replace('/feed');
     } catch (e) {
@@ -49,6 +55,13 @@ export default function Login() {
             <Field label="Senha" value={password} onChangeText={setPassword} secureTextEntry
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               placeholder={isRegister ? 'mínimo 8 caracteres' : ''} onSubmitEditing={submit} />
+            {isRegister && (
+              <>
+                <Field label="Data de nascimento" value={birth} onChangeText={(t) => setBirth(maskDate(t))}
+                  placeholder="DD/MM/AAAA" keyboardType="number-pad" maxLength={10} onSubmitEditing={submit} />
+                <Text style={s.hint}>O Stans é para fãs a partir de 13 anos. Só você vê sua data de nascimento.</Text>
+              </>
+            )}
             <ErrorText>{error}</ErrorText>
             <Button title={isRegister ? 'Cadastrar' : 'Entrar'} onPress={submit} loading={loading} />
             {!isRegister && (
@@ -71,6 +84,7 @@ export default function Login() {
 }
 
 const s = StyleSheet.create({
+  hint: { fontSize: 12, color: colors.muted, marginTop: -4, marginBottom: 8 },
   wrap: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   logo: { width: 160, height: 80, resizeMode: 'contain', alignSelf: 'center' },
   tagline: { textAlign: 'center', color: colors.white, fontWeight: '700', marginBottom: 20 },

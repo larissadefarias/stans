@@ -38,6 +38,8 @@ export default function RootLayout() {
           <Stack.Screen name="notifications" options={{ title: 'Notificações', ...back }} />
           <Stack.Screen name="new-community" options={{ title: 'Nova comunidade', ...back }} />
           <Stack.Screen name="tag/[tag]" options={{ title: 'Hashtag', ...back }} />
+          <Stack.Screen name="birthdate" options={{ title: 'Sua idade', headerBackVisible: false, gestureEnabled: false }} />
+          <Stack.Screen name="mod" options={{ title: 'Moderação', ...back }} />
           <Stack.Screen name="settings" options={{ title: 'Editar perfil', ...back }} />
         </Stack>
       </RealtimeProvider>

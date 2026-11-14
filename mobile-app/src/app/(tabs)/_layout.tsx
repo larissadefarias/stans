@@ -13,9 +13,10 @@ const icon = (src: ImageSourcePropType, badge = 0) => ({ color, size }: { color:
 );
 
 export default function TabsLayout() {
-  const { user, ready } = useAuth();
+  const { user, me, ready } = useAuth();
   const { unreadNotifications, unreadMessages } = useRealtime();
   if (ready && !user) return <Redirect href="/login" />;
+  if (me?.needsBirthDate) return <Redirect href="/birthdate" />;
 
   const bell = () => (
     <Pressable onPress={() => router.push('/notifications')} hitSlop={10} style={{ marginRight: 18 }}

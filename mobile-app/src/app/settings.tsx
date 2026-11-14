@@ -12,7 +12,7 @@ import { colors, radius, font, setThemePref, themePref } from '../theme';
 type WallPolicy = 'everyone' | 'following';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, me } = useAuth();
   const [loaded, setLoaded] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -177,6 +177,14 @@ export default function Settings() {
               </Pressable>
             } />
           ))}
+        </Card>
+      )}
+
+      {me?.isModerator && (
+        <Card>
+          <Text style={s.section}>🛡️ Moderação</Text>
+          <Text style={s.hint}>Veja as denúncias e decida o que fazer.</Text>
+          <Button title="Abrir denúncias" variant="ghost" onPress={() => router.push('/mod')} />
         </Card>
       )}
 
