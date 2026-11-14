@@ -15,7 +15,9 @@ const icon = (src: ImageSourcePropType, badge = 0) => ({ color, size }: { color:
 export default function TabsLayout() {
   const { user, me, ready } = useAuth();
   const { unreadNotifications, unreadMessages } = useRealtime();
-  if (ready && !user) return <Redirect href="/login" />;
+  // Espera a sessão salva carregar: senão as telas pedem dados sem token e mostram "sessão expirou"
+  if (!ready) return null;
+  if (!user) return <Redirect href="/login" />;
   if (me?.needsBirthDate) return <Redirect href="/birthdate" />;
 
   const bell = () => (
