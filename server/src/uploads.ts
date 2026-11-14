@@ -1,17 +1,12 @@
 import { randomUUID } from 'crypto';
-import { mkdirSync } from 'fs';
-import { unlink, writeFile } from 'fs/promises';
-import path from 'path';
 import { Router } from 'express';
 import multer from 'multer';
 import { q } from './db.js';
 import { auth, uidOf } from './auth.js';
 import { HttpError } from './util.js';
+import { putImage, removeImage } from './storage.js';
 
-// Imagens ficam em server/uploads e são servidas em /uploads (ver index.ts).
-// Em produção, troque por um armazenamento na nuvem (S3, R2, Neon Storage…).
-export const UPLOAD_DIR = path.resolve('uploads');
-mkdirSync(UPLOAD_DIR, { recursive: true });
+// Onde as imagens são guardadas (disco ou Supabase Storage): ver storage.ts
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_BYTES, files: 1 } });
@@ -36,8 +31,7 @@ async function save(file: Express.Multer.File | undefined, prefix: string) {
   const ext = detectExt(file.buffer);
   if (!ext) throw new HttpError(415, 'image_invalid_type');
   const name = `${prefix}-${randomUUID()}.${ext}`;
-  await writeFile(path.join(UPLOAD_DIR, name), file.buffer);
-  return `/uploads/${name}`;
+  return putImage(name, file.buffer, ext === 'jpg' ? 'image/jpeg' : `image/${ext}`);
 }
 
 // Imagem de post: só sobe o arquivo e devolve a URL; o post é criado depois com { imageUrl }
@@ -54,8 +48,7 @@ for (const [kind, column] of Object.entries(COLUMNS)) {
     const [old] = await q<{ url: string | null }>(
       `update users u set ${column}=$2 from (select ${column} as url from users where id=$1) o where u.id=$1 returning o.url`,
       [uidOf(res), url]);
-    // Apaga a imagem anterior, se era um arquivo nosso
-    if (old?.url?.startsWith('/uploads/')) await unlink(path.join(UPLOAD_DIR, path.basename(old.url))).catch(() => {});
+    await removeImage(old?.url); // apaga a imagem anterior, se era nossa
 
     res.status(201).json({ url });
   });
@@ -64,7 +57,7 @@ for (const [kind, column] of Object.entries(COLUMNS)) {
     const [old] = await q<{ url: string | null }>(
       `update users u set ${column}=null from (select ${column} as url from users where id=$1) o where u.id=$1 returning o.url`,
       [uidOf(res)]);
-    if (old?.url?.startsWith('/uploads/')) await unlink(path.join(UPLOAD_DIR, path.basename(old.url))).catch(() => {});
+    await removeImage(old?.url);
     res.status(204).end();
   });
 }
