@@ -93,7 +93,10 @@ export default function Chat() {
     socket.emit('message:send', { roomId, content }, (r: { ok: boolean; error?: string }) => {
       if (!r?.ok) {
         setText(content);
-        setError(r?.error === 'rate_limited' ? 'Calma! Você está enviando rápido demais.' : 'Não foi possível enviar. Tente de novo.');
+        setError(r?.error === 'rate_limited' ? 'Calma! Você está enviando rápido demais.'
+          : r?.error === 'offensive_content' ? 'Essa mensagem tem palavras que não são permitidas no Stans.'
+          : r?.error === 'dm_requires_mutual_follow' ? 'Vocês precisam se seguir um ao outro para trocar mensagens.'
+          : 'Não foi possível enviar. Tente de novo.');
       }
     });
   };

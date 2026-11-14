@@ -190,9 +190,14 @@ export function ProfileView({ username }: { username: string }) {
                 loading={busy} onPress={() => run(() => profile.isFollowing ? api.unfollow(username) : api.follow(username))} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button title="Mensagem" variant="ghost" onPress={openDm} />
+              <Button title="Mensagem" variant="ghost" onPress={openDm} disabled={!(profile.isFollowing && profile.followsMe)} />
             </View>
           </View>
+        )}
+        {!isMe && !blocked && !(profile.isFollowing && profile.followsMe) && (
+          <Text style={[s.muted, { textAlign: 'center', marginTop: -4 }]}>
+            Para trocar mensagens, vocês dois precisam se seguir.
+          </Text>
         )}
 
         {isMe && (

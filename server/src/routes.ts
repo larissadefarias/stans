@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { pool, q } from './db.js';
 import { auth, sign, uidOf } from './auth.js';
 import { HttpError } from './util.js';
+import { ADULT_AGE, ageOf, assertClean, canDm } from './safety.js';
 import { assertNotBlocked, extractTags, isBlockedEitherWay, notify, TagParam } from './social-helpers.js';
 
 export const routes = Router();
@@ -27,17 +28,23 @@ routes.post('/auth/register', authLimiter, async (req, res) => {
     username: z.string().regex(/^[a-z0-9_]{3,20}$/),
     email: z.string().email(),
     password: z.string().min(8).max(100),
+    birthDate: z.string(), // AAAA-MM-DD; menores de 13 não podem criar conta
   }).parse(req.body);
+  const age = ageOf(b.birthDate);
+  assertClean(b.username);
   const hash = await bcrypt.hash(b.password, 10);
-  const [u] = await q('insert into users(username, email, password_hash, display_name) values($1,$2,$3,$1) returning id, username',
-    [b.username, b.email.toLowerCase(), hash]);
+  // Menor de 18 começa com o mural só para quem ele segue
+  const [u] = await q(`insert into users(username, email, password_hash, display_name, birth_date, wall_policy)
+    values($1,$2,$3,$1,$4,$5) returning id, username`,
+    [b.username, b.email.toLowerCase(), hash, b.birthDate, age < ADULT_AGE ? 'following' : 'everyone']);
   res.status(201).json({ token: sign(u.id), user: u });
 });
 
 routes.post('/auth/login', authLimiter, async (req, res) => {
   const b = z.object({ email: z.string().email(), password: z.string() }).parse(req.body);
-  const [u] = await q('select id, username, password_hash from users where email = $1', [b.email.toLowerCase()]);
+  const [u] = await q('select id, username, password_hash, banned_at from users where email = $1', [b.email.toLowerCase()]);
   if (!u || !(await bcrypt.compare(b.password, u.password_hash))) throw new HttpError(401, 'invalid_credentials');
+  if (u.banned_at) throw new HttpError(403, 'banned');
   res.json({ token: sign(u.id), user: { id: u.id, username: u.username } });
 });
 
@@ -48,6 +55,7 @@ routes.patch('/me/status', auth, async (req, res) => {
     emoji: z.string().max(8).nullable().default(null),
     expiresInHours: z.number().int().min(1).max(24 * 30).nullable().default(null), // null = nunca expira
   }).parse(req.body);
+  assertClean(b.text);
   await q(`update users set status_text=$2, status_emoji=$3,
            status_expires_at = case when $4::int is null then null else now() + make_interval(hours => $4::int) end
            where id=$1`, [uidOf(res), b.text, b.emoji, b.expiresInHours]);
@@ -62,6 +70,7 @@ routes.patch('/me/settings', auth, async (req, res) => {
     bio: z.string().max(300).optional(),
     displayName: z.string().min(1).max(40).optional(),
   }).parse(req.body);
+  assertClean(b.bio, b.displayName);
   await q(`update users set invisible=coalesce($2,invisible), hide_ratings=coalesce($3,hide_ratings),
            wall_policy=coalesce($4,wall_policy), bio=coalesce($5,bio), display_name=coalesce($6,display_name) where id=$1`,
     [uidOf(res), b.invisible, b.hideRatings, b.wallPolicy, b.bio, b.displayName]);
@@ -163,6 +172,7 @@ routes.get('/users/:username/wall', auth, async (req, res) => {
 
 routes.post('/users/:username/wall', auth, async (req, res) => {
   const b = z.object({ content: z.string().trim().min(1).max(300), parentId: z.number().int().optional() }).parse(req.body);
+  assertClean(b.content);
   const me = uidOf(res);
   const [p] = await q('select id, wall_policy from users where username=$1', [req.params.username]);
   if (!p) throw new HttpError(404, 'user_not_found');
@@ -198,6 +208,7 @@ routes.post('/communities', auth, async (req, res) => {
     slug: z.string().regex(/^[a-z0-9-]{3,40}$/), name: z.string().min(2).max(60),
     description: z.string().max(300).default(''), category: z.enum(CATEGORIES),
   }).parse(req.body);
+  assertClean(b.slug, b.name, b.description);
   const me = uidOf(res);
   const c = await pool.connect();
   try {
@@ -280,6 +291,7 @@ routes.post('/communities/:id/posts', auth, async (req, res) => {
     imageUrl: z.union([z.string().regex(/^\/uploads\/[\w.-]+$/), z.string().url()]).optional(), // vem de POST /uploads/image
     isSpoiler: z.boolean().default(false), tags: z.array(z.string().max(24)).max(5).default([]),
   }).parse(req.body);
+  assertClean(b.content, ...b.tags);
   const member = await q('select 1 from memberships where user_id=$1 and community_id=$2', [uidOf(res), req.params.id]);
   if (!member.length) throw new HttpError(403, 'not_a_member');
   const tags = [...new Set([...b.tags.map(t => t.toLowerCase()), ...extractTags(b.content)])].slice(0, 10);
@@ -316,6 +328,7 @@ routes.get('/posts/:id/comments', auth, async (req, res) => {
 
 routes.post('/posts/:id/comments', auth, async (req, res) => {
   const { content } = z.object({ content: z.string().trim().min(1).max(500) }).parse(req.body);
+  assertClean(content);
   const [p] = await q<{ author_id: string }>('select author_id from posts where id=$1', [req.params.id]);
   if (!p) throw new HttpError(404, 'not_found');
   await assertNotBlocked(uidOf(res), p.author_id);
@@ -360,6 +373,8 @@ routes.post('/dm/:username', auth, async (req, res) => {
   const other = await userIdByName(req.params.username as string);
   if (other === me) throw new HttpError(400, 'cannot_dm_self');
   await assertNotBlocked(me, other);
+  // Mensagem privada só entre quem se segue mutuamente (protege menores de desconhecidos)
+  if (!(await canDm(me, other))) throw new HttpError(403, 'dm_requires_mutual_follow');
   const [found] = await q<{ id: string }>(`select r.id from rooms r
     join room_members a on a.room_id=r.id and a.user_id=$1 join room_members b on b.room_id=r.id and b.user_id=$2
     where r.kind='dm' limit 1`, [me, other]);

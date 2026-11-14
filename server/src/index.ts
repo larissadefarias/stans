@@ -6,6 +6,7 @@ import { routes } from './routes.js';
 import { attachSocket } from './socket.js';
 import { UPLOAD_DIR, uploads } from './uploads.js';
 import { social } from './social.js';
+import { safety } from './safety.js';
 import { errorHandler } from './util.js';
 
 const app = express();
@@ -18,6 +19,7 @@ app.set('io', io);
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d', index: false }));
 app.use(uploads);
+app.use(safety);
 app.use(social);
 app.use(routes);
 app.use(errorHandler);

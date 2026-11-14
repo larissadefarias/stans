@@ -84,6 +84,13 @@ async function uploadImage(kind: ImageKind | 'post', img: PickedImage) {
 
 /* ───────── Tipos (espelham server/src/routes.ts) ───────── */
 export type User = { id: string; username: string };
+/** Dados da minha conta (GET /me): idade, moderação. */
+export type Me = User & { isModerator: boolean; needsBirthDate: boolean; isMinor: boolean };
+export type ModReport = {
+  id: number; targetType: 'user' | 'post' | 'comment' | 'wall'; targetId: string; reason: string;
+  status: 'open' | 'reviewed' | 'dismissed'; createdAt: string; reporter: string;
+  content: string | null; imageUrl: string | null; targetUser: string | null; targetBanned: boolean; timesReported: number;
+};
 export type Category = 'anime' | 'kpop' | 'series' | 'games' | 'music' | 'sports' | 'teams' | 'players';
 export type Community = { id: string; slug: string; name: string; description: string; category: Category; members: number };
 export type Profile = {
@@ -135,8 +142,14 @@ export const cursorAfter = (posts: Post[]) => {
 export const api = {
   login: (email: string, password: string) =>
     request<{ token: string; user: User }>('POST', '/auth/login', { email, password }),
-  register: (username: string, email: string, password: string) =>
-    request<{ token: string; user: User }>('POST', '/auth/register', { username, email, password }),
+  register: (username: string, email: string, password: string, birthDate: string) =>
+    request<{ token: string; user: User }>('POST', '/auth/register', { username, email, password, birthDate }),
+  me: () => request<Me>('GET', '/me'),
+  setBirthDate: (birthDate: string) => request<void>('POST', '/me/birth-date', { birthDate }),
+
+  modReports: (status: ModReport['status']) => request<ModReport[]>('GET', `/mod/reports?status=${status}`),
+  modDecide: (id: number, action: 'dismiss' | 'remove' | 'ban') => request<void>('POST', `/mod/reports/${id}`, { action }),
+  unban: (username: string) => request<void>('POST', `/mod/users/${encodeURIComponent(username)}/unban`),
 
   communities: (category?: Category) =>
     request<Community[]>('GET', `/communities${category ? `?category=${category}` : ''}`),
@@ -238,6 +251,15 @@ export function errorMessage(e: unknown): string {
     cannot_dm_self: 'Você não pode mandar mensagem para si mesmo.',
     invalid_or_expired_token: 'Código inválido ou expirado. Peça um novo.',
     not_in_room: 'Você não participa desta conversa.',
+    too_young: 'O Stans é para fãs a partir de 13 anos. Volte quando fizer 13! 💜',
+    invalid_birth_date: 'Data de nascimento inválida. Use DD/MM/AAAA.',
+    birth_date_already_set: 'Sua data de nascimento já foi informada.',
+    offensive_content: 'Esse texto tem palavras que não são permitidas no Stans.',
+    banned: 'Esta conta foi suspensa pela moderação.',
+    dm_requires_mutual_follow: 'Vocês precisam se seguir um ao outro para trocar mensagens.',
+    not_moderator: 'Só moderadores podem ver isso.',
+    cannot_ban_self: 'Você não pode banir a si mesmo.',
+    cannot_ban_moderator: 'Não é possível banir um moderador.',
   };
   if (e.status === 429 && e.code === 'unknown') return map.too_many_requests;
   return map[e.code] ?? `Erro (${e.code}).`;
